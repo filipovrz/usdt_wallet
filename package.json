@@ -1,0 +1,110 @@
+{
+  "name": "usdt-wallet",
+  "version": "2.1.0",
+  "description": "Professional non-custodial USDT desktop wallet for TRC-20 and ERC-20",
+  "main": "dist-electron/main/index.js",
+  "author": "Evtinko Auctions",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.node.json && vite build && tsc -p tsconfig.electron.json",
+    "preview": "vite preview",
+    "electron:dev": "tsc -p tsconfig.electron.json && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "test": "npm run build && node scripts/run-tests.mjs",
+    "test:live": "npm run build && node scripts/run-tests.mjs --live",
+    "test:e2e": "npm run build && playwright test"
+  },
+  "dependencies": {
+    "@ledgerhq/hw-app-eth": "^6.35.4",
+    "@ledgerhq/hw-app-trx": "^6.28.4",
+    "@ledgerhq/hw-transport-node-hid": "^6.29.4",
+    "@noble/hashes": "^1.7.1",
+    "@scure/bip32": "^1.6.2",
+    "@scure/bip39": "^1.5.4",
+    "bip39": "^3.1.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.6.2",
+    "ethers": "^6.13.5",
+    "lucide-react": "^0.469.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.1.1",
+    "tronweb": "^6.0.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@playwright/test": "^1.49.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.usdtwallet.desktop",
+    "productName": "USDT Wallet",
+    "copyright": "Copyright © 2026 Evtinko Auctions",
+    "directories": {
+      "output": "release"
+    },
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "USDT Wallet",
+      "uninstallDisplayName": "USDT Wallet",
+      "deleteAppDataOnUninstall": true,
+      "installerLanguages": ["en_US"],
+      "language": "1033"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.finance"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "build/icons",
+      "category": "Finance"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://releases.usdt-wallet.local/win"
+    }
+  }
+}

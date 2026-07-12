@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-electron/
+release/
+test-results/
+playwright-report/
+playwright/.cache/
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.pfx
+*.p12
+vault.enc.json
