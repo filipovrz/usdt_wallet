@@ -1,7 +1,12 @@
-import electronPath from 'electron';
+import path from 'path';
 import { test, expect, _electron as electron } from '@playwright/test';
 
 const root = process.cwd();
+
+function getElectronExecutable(): string {
+  const binary = process.platform === 'win32' ? 'electron.exe' : 'electron';
+  return path.join(root, 'node_modules', 'electron', 'dist', binary);
+}
 
 test.describe('USDT Wallet E2E', () => {
   test('app launches without crash', async () => {
@@ -9,7 +14,7 @@ test.describe('USDT Wallet E2E', () => {
       cwd: root,
       args: ['.'],
       env: { ...process.env, NODE_ENV: 'production' },
-      executablePath: electronPath,
+      executablePath: getElectronExecutable(),
       timeout: 120_000,
     });
 
