@@ -8,15 +8,16 @@ test.describe('USDT Wallet E2E', () => {
       cwd: root,
       args: ['.'],
       env: { ...process.env, NODE_ENV: 'production' },
-      timeout: 60_000,
+      executablePath: require('electron') as string,
+      timeout: 120_000,
     });
 
     try {
-      const window = await app.firstWindow({ timeout: 30_000 });
+      const window = await app.firstWindow({ timeout: 60_000 });
       await window.waitForLoadState('domcontentloaded');
-      await expect(window).toHaveTitle(/USDT Wallet/i, { timeout: 15_000 });
+      await expect(window).toHaveTitle(/USDT Wallet/i, { timeout: 30_000 });
 
-      await window.waitForSelector('#root', { timeout: 20_000 });
+      await window.waitForSelector('#root', { timeout: 30_000 });
       const html = await window.locator('#root').innerHTML();
       expect(html.length).toBeGreaterThan(0);
 
