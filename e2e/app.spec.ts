@@ -1,3 +1,4 @@
+import electronPath from 'electron';
 import { test, expect, _electron as electron } from '@playwright/test';
 
 const root = process.cwd();
@@ -8,7 +9,7 @@ test.describe('USDT Wallet E2E', () => {
       cwd: root,
       args: ['.'],
       env: { ...process.env, NODE_ENV: 'production' },
-      executablePath: require('electron') as string,
+      executablePath: electronPath,
       timeout: 120_000,
     });
 
