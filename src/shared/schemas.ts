@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ALL_NETWORK_IDS } from './networks';
 import type { NetworkId } from './types';
 
-export const networkIdSchema = z.enum(['tron', 'ethereum', 'bsc', 'polygon']);
+export const networkIdSchema = z.enum(['tron', 'ethereum', 'bsc', 'polygon', 'solana']);
 
 export const createWalletSchema = z.object({
   name: z.string().min(1).max(64),
@@ -26,6 +26,8 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 
+export const sendAssetTypeSchema = z.enum(['usdt', 'native']);
+
 export const sendSchema = z.object({
   accountId: z.string().uuid(),
   network: networkIdSchema,
@@ -33,6 +35,7 @@ export const sendSchema = z.object({
   amount: z.string().regex(/^\d+(\.\d+)?$/),
   password: z.string().min(1),
   feeTier: z.enum(['slow', 'normal', 'fast']).optional(),
+  assetType: sendAssetTypeSchema.optional(),
 });
 
 export const addressBookSchema = z.object({

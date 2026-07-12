@@ -11,16 +11,22 @@ import {
   multisigSchema,
 } from '../shared/schemas';
 import type { WalletManager } from './wallet-manager';
-import type { NetworkId, FeeTier, HardwareDevice } from '../shared/types';
+import type { NetworkId, FeeTier, SendAssetType, HardwareDevice } from '../shared/types';
 
 export function registerIpcHandlers(wallet: WalletManager): void {
-  ipcMain.handle(IPC_CHANNELS.GET_SESSION, () => wallet.getSession());
+  ipcMain.handle(IPC_CHANNELS.GET_SESSION, () => ({ success: true, data: wallet.getSession() }));
   ipcMain.handle(IPC_CHANNELS.TOUCH_ACTIVITY, () => { wallet.touchActivity(); return { success: true }; });
 
   ipcMain.handle(IPC_CHANNELS.CREATE_WALLET, async (_e, payload: unknown) => {
     const p = createWalletSchema.safeParse(payload);
     if (!p.success) return { success: false, error: 'VALIDATION_ERROR' };
     return wallet.createWallet(p.data.name, p.data.password, p.data.passphrase);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.FINALIZE_WALLET_SETUP, async (_e, payload: unknown) => {
+    const p = unlockSchema.safeParse(payload);
+    if (!p.success) return { success: false, error: 'VALIDATION_ERROR' };
+    return wallet.finalizeWalletSetup(p.data.password);
   });
 
   ipcMain.handle(IPC_CHANNELS.IMPORT_WALLET, async (_e, payload: unknown) => {
@@ -72,18 +78,43 @@ export function registerIpcHandlers(wallet: WalletManager): void {
 
   ipcMain.handle(
     IPC_CHANNELS.SEND_PREVIEW,
-    async (_e, payload: { accountId: string; network: NetworkId; to: string; amount: string; feeTier?: FeeTier }) => {
+    async (
+      _e,
+      payload: {
+        accountId: string;
+        network: NetworkId;
+        to: string;
+        amount: string;
+        feeTier?: FeeTier;
+        assetType?: SendAssetType;
+      }
+    ) => {
       if (!payload?.accountId || !payload?.network || !payload?.to || !payload?.amount) {
         return { success: false, error: 'VALIDATION_ERROR' };
       }
-      return wallet.sendPreview(payload.accountId, payload.network, payload.to, payload.amount, payload.feeTier);
+      return wallet.sendPreview(
+        payload.accountId,
+        payload.network,
+        payload.to,
+        payload.amount,
+        payload.feeTier,
+        payload.assetType || 'usdt'
+      );
     }
   );
 
   ipcMain.handle(IPC_CHANNELS.SEND, async (_e, payload: unknown) => {
     const p = sendSchema.safeParse(payload);
     if (!p.success) return { success: false, error: 'VALIDATION_ERROR' };
-    return wallet.send(p.data.accountId, p.data.network, p.data.to, p.data.amount, p.data.password, p.data.feeTier);
+    return wallet.send(
+      p.data.accountId,
+      p.data.network,
+      p.data.to,
+      p.data.amount,
+      p.data.password,
+      p.data.feeTier,
+      p.data.assetType || 'usdt'
+    );
   });
 
   ipcMain.handle(IPC_CHANNELS.GET_TRANSACTIONS, (_e, accountId?: string) => wallet.getTransactions(accountId));

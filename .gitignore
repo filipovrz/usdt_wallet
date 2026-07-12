@@ -13,3 +13,7 @@ Thumbs.db
 *.pfx
 *.p12
 vault.enc.json
+.test-user-data-*/
+.test-debug-*/
+.test-finalize-*/
+.test-inline-*/

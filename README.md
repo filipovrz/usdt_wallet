@@ -2,14 +2,14 @@
 
 **Repository:** [github.com/filipovrz/usdt_wallet](https://github.com/filipovrz/usdt_wallet)
 
-Професионален **некастодиален** desktop портфейл за **USDT** — TRC-20 (TRON) и ERC-20 (Ethereum).
+Професионален **некастодиален** desktop портфейл — **USDT** (TRC-20 / ERC-20 / BEP-20), **native coins** (TRX, ETH, BNB, MATIC, SOL) и **HNT (Solana SPL)**.
 
-**Текуща версия: 2.1.0**
+**Текуща версия: 2.2.1**
 
 Вашите private keys и seed фраза **никога не напускат компютъра**. Нулева телеметрия.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/version-2.1.0-green)
+![Version](https://img.shields.io/badge/version-2.2.1-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -21,7 +21,9 @@
 | **Създаване / Import** | BIP39 seed (24 думи), парола за vault |
 | **TRC-20 USDT** | TRON mainnet — баланс, изпращане, история |
 | **ERC-20 USDT** | Ethereum mainnet — баланс, изпращане, история |
-| **Dashboard** | USDT + native баланс (TRX/ETH), превключване на мрежа |
+| **Solana HNT + SOL** | HNT (SPL) и native SOL — баланс, изпращане, история |
+| **Native send** | TRX, ETH, BNB, MATIC, SOL |
+| **Dashboard** | Token + native баланс, превключване на мрежа |
 | **Send / Receive** | Preview, потвърждение, QR код |
 | **Address Book** | Контакти по мрежа |
 | **Backup** | Seed reveal с парола |
@@ -30,7 +32,7 @@
 | **Settings** | BG/EN, auto-lock минути, default мрежа |
 | **Installer** | NSIS Windows installer с деинсталация |
 | **BSC / Polygon** | BEP-20 и Polygon USDT |
-| **Testnet** | Shasta, Sepolia, testnet BSC/Polygon |
+| **Testnet** | Shasta, Sepolia, testnet BSC/Polygon, Solana Devnet |
 | **Multi-account** | Множество акаунти в един vault |
 | **Themes** | Dark / Light |
 | **Hardware** | Ledger USB scan + address; Trezor detection |
@@ -104,7 +106,24 @@ npm run electron:build:win
 4. **Help** (sidebar → Помощ) — пълен наръчник
 5. **TRC-20:** дръж TRX за такси · **ERC-20:** дръж ETH за gas
 
-### Ръчен test (кратко)
+### Testnet тест (без реални пари)
+
+1. **Настройки** → включи **Testnet mode** → Запази
+2. **Получи** → копирай адреса за избраната мрежа
+3. Вземи test tokens от faucet:
+
+| Мрежа | Faucet |
+|-------|--------|
+| TRON Shasta | https://shasta.tronex.io/join/getJoinPage |
+| Ethereum Sepolia | https://sepoliafaucet.com |
+| Solana Devnet | https://faucet.solana.com (GitHub login) |
+
+4. **Табло** → Refresh → test send (Native TRX/ETH/SOL)
+5. След тестове: изключи Testnet mode
+
+⚠️ TRON Shasta: `shasta.tronscan.org/#/tools/faucet` **не работи** (404) — ползвай tronex.io.
+
+### Ръчен test mainnet (кратко)
 
 1. Получи → копирай TRC-20 адрес (T…)
 2. Изпрати малко USDT + ~15 TRX от exchange
@@ -147,7 +166,7 @@ npm run test:e2e      # Electron smoke test
 npm run test:live     # + blockchain RPC (интернет)
 ```
 
-Последен резултат: **9/9 unit ✓** · **E2E 1/1 ✓**
+Последен резултат: **9/9 unit ✓** · **E2E create-wallet ✓** (13.07.2026)
 
 ---
 
@@ -155,7 +174,8 @@ npm run test:live     # + blockchain RPC (интернет)
 
 | Версия | Промени |
 |--------|---------|
-| **2.1.0** | Hardware, multisig deploy, updater, toast UX, © Evtinko Auctions |
+| **2.2.1** | TRON address fix, create-wallet flow, session IPC, testnet RPC/checksum |
+| **2.2.0** | Solana SOL + HNT SPL, vault v3, CoinGecko SOL/HNT |
 | **2.0.0** | BSC/Polygon, testnet, multi-account, themes, CI |
 | **1.1.0** | Help меню, автоматични тестове, CHANGELOG |
 | **1.0.0** | Пълен портфейл + NSIS инсталатор |

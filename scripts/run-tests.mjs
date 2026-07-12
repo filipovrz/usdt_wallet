@@ -109,9 +109,11 @@ async function runTests() {
     const keys2 = deriveKeysFromMnemonic(normalizeMnemonic(`  ${TEST_MNEMONIC.toUpperCase()}  `));
     assert(keys1.tronAddress === keys2.tronAddress, 'tron address not deterministic');
     assert(keys1.ethAddress === keys2.ethAddress, 'eth address not deterministic');
+    assert(keys1.solanaAddress === keys2.solanaAddress, 'solana address not deterministic');
     assert(keys1.tronAddress.startsWith('T'), `tron address format: ${keys1.tronAddress}`);
     assert(keys1.ethAddress.startsWith('0x'), `eth address format: ${keys1.ethAddress}`);
-    ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…)`);
+    assert(keys1.solanaAddress.length >= 32, `solana address format: ${keys1.solanaAddress}`);
+    ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…, SOL: ${keys1.solanaAddress.slice(0, 8)}…)`);
   } catch (e) {
     fail('Mnemonic & key derivation', e);
   }
@@ -125,7 +127,12 @@ async function runTests() {
     assert(!bc.validateAddress('ethereum', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'), 'tron addr on eth accepted');
     assert(bc.validateAddress('bsc', '0x55d398326f99059fF775485246999027B3197955'), 'valid bsc rejected');
     assert(bc.validateAddress('polygon', '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'), 'valid polygon rejected');
-    ok('Address validation (TRON + EVM chains)');
+    const keys = deriveKeysFromMnemonic(TEST_MNEMONIC);
+    assert(bc.validateAddress('tron', keys.tronAddress), 'derived tron address invalid');
+    assert(bc.validateAddress('solana', keys.solanaAddress), 'valid solana rejected');
+    assert(!bc.validateAddress('solana', 'not-a-valid-solana-address'), 'invalid solana accepted');
+    assert(!bc.validateAddress('solana', keys.tronAddress), 'tron addr on solana accepted');
+    ok('Address validation (TRON + EVM + Solana)');
   } catch (e) {
     fail('Address validation', e);
   }

@@ -1,12 +1,30 @@
 import { app, BrowserWindow, shell, session } from 'electron';
 import path from 'path';
+import { readFileSync } from 'fs';
 import { WalletManager } from './wallet-manager';
 import { registerIpcHandlers } from './ipc-handlers';
 import { initAutoUpdater, checkUpdatesOnStartup } from './services/update-service';
 
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow: BrowserWindow | null = null;
-const walletManager = new WalletManager();
+let walletManager: WalletManager | null = null;
+
+if (process.env.ELECTRON_USER_DATA) {
+  app.setPath('userData', process.env.ELECTRON_USER_DATA);
+}
+
+// Ensure consistent userData path (not generic "Electron" folder).
+try {
+  const pkg = JSON.parse(readFileSync(path.join(__dirname, '../../package.json'), 'utf8')) as { name?: string };
+  if (pkg.name) app.setName(pkg.name);
+} catch {
+  app.setName('usdt-wallet');
+}
+
+function getWalletManager(): WalletManager {
+  if (!walletManager) walletManager = new WalletManager();
+  return walletManager;
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -41,7 +59,6 @@ function createWindow(): void {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
@@ -53,6 +70,11 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    if (isDev) {
+      callback({ responseHeaders: details.responseHeaders });
+      return;
+    }
+
     callback({
       responseHeaders: {
         ...details.responseHeaders,
@@ -63,11 +85,11 @@ app.whenReady().then(() => {
     });
   });
 
-  registerIpcHandlers(walletManager);
+  registerIpcHandlers(getWalletManager());
   initAutoUpdater();
   createWindow();
 
-  const settingsRes = walletManager.getSettings();
+  const settingsRes = getWalletManager().getSettings();
   if (settingsRes.success && settingsRes.data?.checkUpdatesOnStart) {
     checkUpdatesOnStartup(true);
   }
@@ -78,12 +100,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  walletManager.lock();
+  walletManager?.lock();
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('before-quit', () => {
-  walletManager.lock();
+  walletManager?.lock();
 });
 
 process.on('uncaughtException', (error) => {

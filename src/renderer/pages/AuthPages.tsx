@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { Shield, Wallet, Import } from 'lucide-react';
 
 import { useWallet } from '../context/WalletContext';
 
-import { Button, Card, CopyrightFooter } from '../components/ui';
+import { Button, Card, CopyrightFooter, LoadingSpinner } from '../components/ui';
 
 import { useNotify } from '../hooks/useNotify';
 
@@ -14,9 +14,15 @@ import { useNotify } from '../hooks/useNotify';
 
 export function WelcomePage() {
 
-  const { t } = useWallet();
+  const { t, session, refreshSession } = useWallet();
 
+  useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
 
+  if (session.hasVault) {
+    return <Navigate to="/unlock" replace />;
+  }
 
   return (
 
@@ -90,13 +96,31 @@ export function UnlockPage() {
 
   const notify = useNotify();
 
+  const navigate = useNavigate();
+
   const [password, setPassword] = useState('');
 
   const [error, setError] = useState('');
 
   const [loading, setLoading] = useState(false);
 
+  const [vaultChecked, setVaultChecked] = useState(false);
 
+  useEffect(() => {
+    void refreshSession().finally(() => setVaultChecked(true));
+  }, [refreshSession]);
+
+  if (!vaultChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!session.hasVault) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleUnlock = async (e: React.FormEvent) => {
 
@@ -110,9 +134,11 @@ export function UnlockPage() {
 
     if (res.success) {
 
-      await refreshSession();
+      await refreshSession({ sync: true });
 
       notify.success(notify.t.toast.unlockSuccess);
+
+      navigate('/dashboard', { replace: true });
 
     } else {
 

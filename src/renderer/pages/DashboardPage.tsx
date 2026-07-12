@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { Button, Card, Badge, NetworkSelector, LoadingSpinner, WarningAlert } from '../components/ui';
 import { getNetworkConfig } from '@shared/networks';
-import { getAccountAddress } from '@shared/types';
+import { getAccountAddress, getNetworkTokenLabel } from '@shared/types';
 import type { TronResources } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 
@@ -17,6 +17,7 @@ export function DashboardPage() {
     settings,
     session,
     setActiveAccount,
+    t,
   } = useWallet();
   const notify = useNotify();
   const [tronResources, setTronResources] = useState<TronResources | null>(null);
@@ -55,6 +56,7 @@ export function DashboardPage() {
 
   const address = getAccountAddress(activeAccount, activeNetwork);
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
+  const tokenLabel = getNetworkTokenLabel(activeNetwork, settings.testnetMode);
 
   return (
     <div className="p-8 space-y-6">
@@ -90,15 +92,15 @@ export function DashboardPage() {
         <Card className="lg:col-span-2 space-y-6">
           <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
           <div className="rounded-2xl bg-gradient-to-br from-brand-600/20 to-surface-900 p-6 border border-brand-500/20">
-            <p className="text-sm text-gray-400">USDT Balance</p>
+            <p className="text-sm text-gray-400">{tokenLabel} {t.balance}</p>
             <p className="mt-2 text-4xl font-bold">
-              {settings.hideBalances ? '••••••' : balance?.usdt ?? '0'} USDT
+              {settings.hideBalances ? '••••••' : balance?.usdt ?? '0'} {tokenLabel}
             </p>
             {balance?.usdValue && !settings.hideBalances && (
               <p className="mt-1 text-sm text-gray-500">≈ {balance.usdValue}</p>
             )}
             <p className="mt-4 text-sm text-gray-500">
-              Native: {settings.hideBalances ? '••••' : `${balance?.native ?? '0'} ${balance?.nativeSymbol ?? cfg.nativeSymbol}`}
+              Native: {settings.hideBalances ? '••••' : `${balance?.native ?? '0'} ${cfg.nativeSymbol}`}
             </p>
           </div>
           {activeNetwork === 'tron' && tronResources && (

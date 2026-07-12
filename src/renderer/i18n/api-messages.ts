@@ -17,6 +17,20 @@ export function formatApiError(code: string | undefined, t: T): string {
       .replace('{amount}', amount || '');
   }
 
+  if (code.startsWith('INSUFFICIENT_ASSET:')) {
+    const [, symbol, amount] = code.split(':');
+    return t.errors.insufficientAsset
+      .replace('{symbol}', symbol || '')
+      .replace('{amount}', amount || '');
+  }
+
+  if (code.startsWith('LOW_NATIVE_RESERVE:')) {
+    const [, symbol, amount] = code.split(':');
+    return t.errors.lowNativeReserve
+      .replace('{symbol}', symbol || '')
+      .replace('{amount}', amount || '');
+  }
+
   const mapped = t.errors[code as keyof typeof t.errors];
   if (mapped) return mapped;
 

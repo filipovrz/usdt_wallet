@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import type {
   SessionInfo,
   AppSettings,
@@ -15,7 +16,7 @@ interface WalletContextValue {
   t: (typeof translations)['bg'];
   lang: Language;
   setLang: (lang: Language) => void;
-  refreshSession: () => Promise<void>;
+  refreshSession: (options?: { sync?: boolean }) => Promise<SessionInfo | null>;
   activeAccount: WalletAccount | null;
   setActiveAccount: (account: WalletAccount | null) => void;
   activeNetwork: NetworkId;
@@ -48,18 +49,37 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const t = translations[lang];
 
-  const refreshSession = useCallback(async () => {
-    const res = await window.walletApi.getSession();
-    if (res.success && res.data) {
-      setSession(res.data);
-      setSettings(res.data.settings);
-      setLangState(res.data.settings.language);
-      setActiveNetwork(res.data.settings.defaultNetwork);
-      if (res.data.accounts.length > 0 && !activeAccount) {
-        setActiveAccount(res.data.accounts[0]);
+  const refreshSession = useCallback(async (options?: { sync?: boolean }): Promise<SessionInfo | null> => {
+    try {
+      if (!window.walletApi) {
+        setError('Wallet API not available — restart the application.');
+        setLoading(false);
+        return null;
       }
+      const res = await window.walletApi.getSession();
+      if (res.success && res.data) {
+        const apply = () => {
+          setSession(res.data!);
+          setSettings(res.data!.settings);
+          setLangState(res.data!.settings.language);
+          setActiveNetwork(res.data!.settings.defaultNetwork);
+          if (res.data!.accounts.length > 0 && !activeAccount) {
+            setActiveAccount(res.data!.accounts[0]);
+          }
+        };
+        if (options?.sync) {
+          flushSync(apply);
+        } else {
+          apply();
+        }
+        return res.data;
+      }
+    } catch {
+      setError('Failed to connect to wallet backend.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+    return null;
   }, [activeAccount]);
 
   const refreshBalance = useCallback(async () => {
@@ -91,6 +111,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [refreshSession]);
 
   useEffect(() => {
+    setBalance(null);
     if (session.unlocked && activeAccount) {
       refreshBalance();
       const interval = setInterval(refreshBalance, 30000);

@@ -12,6 +12,7 @@ export interface NetworkConfig {
   nativeSymbol: string;
   chainId?: number;
   isEvm: boolean;
+  isSolana?: boolean;
   minNativeForSend: number;
 }
 
@@ -72,6 +73,22 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     isEvm: true,
     minNativeForSend: 0.05,
   },
+  solana: {
+    id: 'solana',
+    name: 'Solana (HNT SPL)',
+    symbol: 'HNT',
+    usdtContract: 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux',
+    usdtDecimals: 8,
+    explorerUrl: 'https://solscan.io',
+    rpcUrls: [
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+    ],
+    nativeSymbol: 'SOL',
+    isEvm: false,
+    isSolana: true,
+    minNativeForSend: 0.001,
+  },
 };
 
 const TESTNET: Record<NetworkId, NetworkConfig> = {
@@ -88,8 +105,12 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     ...MAINNET.ethereum,
     name: 'Ethereum Sepolia (Testnet)',
     explorerUrl: 'https://sepolia.etherscan.io',
-    rpcUrls: ['https://rpc.sepolia.org', 'https://ethereum-sepolia.publicnode.com'],
-    usdtContract: '0x7169D20af0d9558c8BFDd8aF2d9F4E3c8C9E5E5E',
+    rpcUrls: [
+      'https://ethereum-sepolia-rpc.publicnode.com',
+      'https://1rpc.io/sepolia',
+      'https://rpc2.sepolia.org',
+    ],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
     chainId: 11155111,
     minNativeForSend: 0.001,
   },
@@ -107,13 +128,21 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     name: 'Polygon Amoy (Testnet)',
     explorerUrl: 'https://amoy.polygonscan.com',
     rpcUrls: ['https://rpc-amoy.polygon.technology'],
-    usdtContract: '0x41E94Eb019C0762f9Bfcf9Fb1E58725bfb0e7582',
+    usdtContract: '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
     chainId: 80002,
     minNativeForSend: 0.01,
   },
+  solana: {
+    ...MAINNET.solana,
+    name: 'Solana Devnet',
+    explorerUrl: 'https://solscan.io',
+    rpcUrls: ['https://api.devnet.solana.com'],
+    usdtContract: 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux',
+    minNativeForSend: 0.001,
+  },
 };
 
-export const ALL_NETWORK_IDS: NetworkId[] = ['tron', 'ethereum', 'bsc', 'polygon'];
+export const ALL_NETWORK_IDS: NetworkId[] = ['tron', 'ethereum', 'bsc', 'polygon', 'solana'];
 
 export function getNetworkConfig(id: NetworkId, testnet = false): NetworkConfig {
   const map = testnet ? TESTNET : MAINNET;
@@ -122,6 +151,10 @@ export function getNetworkConfig(id: NetworkId, testnet = false): NetworkConfig 
 
 export function getAllNetworks(testnet = false): NetworkConfig[] {
   return ALL_NETWORK_IDS.map((id) => getNetworkConfig(id, testnet));
+}
+
+export function isSolanaNetwork(id: NetworkId): boolean {
+  return getNetworkConfig(id, false).isSolana === true;
 }
 
 export function isEvmNetwork(id: NetworkId): boolean {

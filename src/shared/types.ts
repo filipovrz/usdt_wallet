@@ -1,6 +1,10 @@
-export type NetworkId = 'tron' | 'ethereum' | 'bsc' | 'polygon';
+import { getNetworkConfig } from './networks';
+
+export type NetworkId = 'tron' | 'ethereum' | 'bsc' | 'polygon' | 'solana';
 
 export type FeeTier = 'slow' | 'normal' | 'fast';
+
+export type SendAssetType = 'usdt' | 'native';
 
 export type ThemeMode = 'dark' | 'light';
 
@@ -9,6 +13,7 @@ export interface WalletAccount {
   name: string;
   tronAddress: string;
   ethAddress: string;
+  solanaAddress?: string;
   createdAt: string;
 }
 
@@ -34,6 +39,7 @@ export interface TransactionRecord {
   status: 'pending' | 'confirmed' | 'failed';
   accountId: string;
   note?: string;
+  assetSymbol?: string;
 }
 
 export type MultisigDeployStatus = 'local' | 'pending' | 'deployed' | 'failed';
@@ -101,6 +107,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   checkUpdatesOnStart: true,
 };
 
+export interface RemoteTransaction {
+  hash: string;
+  from: string;
+  to: string;
+  amount: string;
+  timestamp: number;
+  direction: 'in' | 'out';
+  assetSymbol?: string;
+}
+
 export interface BalanceInfo {
   usdt: string;
   native: string;
@@ -122,6 +138,7 @@ export interface SendRequest {
   amount: string;
   password: string;
   feeTier?: FeeTier;
+  assetType?: SendAssetType;
 }
 
 export interface SendPreview {
@@ -131,6 +148,10 @@ export interface SendPreview {
   feeSymbol: string;
   totalUsdt: string;
   network: NetworkId;
+  assetType: SendAssetType;
+  assetSymbol: string;
+  assetBalance: string;
+  hasEnoughAsset: boolean;
   nativeBalance: string;
   minNativeRequired: string;
   hasEnoughNative: boolean;
@@ -150,6 +171,8 @@ export interface PriceInfo {
   eth: number;
   bnb: number;
   matic: number;
+  sol: number;
+  hnt: number;
   currency: string;
 }
 
@@ -210,12 +233,17 @@ export interface UpdateInfo {
 
 export function getAccountAddress(account: WalletAccount, network: NetworkId): string {
   if (network === 'tron') return account.tronAddress;
+  if (network === 'solana') return account.solanaAddress || '';
   return account.ethAddress;
+}
+
+export function getNetworkTokenLabel(network: NetworkId, testnet = false): string {
+  return getNetworkConfig(network, testnet).symbol;
 }
 
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-export const VAULT_VERSION = 2;
+export const VAULT_VERSION = 3;
 
 // Re-export network helpers
 export { getNetworkConfig, getAllNetworks, ALL_NETWORK_IDS } from './networks';

@@ -114,7 +114,7 @@ export function NetworkSelector({
   return (
     <div className="space-y-2">
       <span className="text-sm text-gray-400">Мрежа / Network</span>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {ALL_NETWORK_IDS.map((net) => (
           <button
             key={net}
@@ -162,6 +162,44 @@ export function FeeTierSelector({
           {t.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+export function SendAssetSelector({
+  value,
+  onChange,
+  usdtLabel,
+  nativeLabel,
+}: {
+  value: 'usdt' | 'native';
+  onChange: (v: 'usdt' | 'native') => void;
+  usdtLabel: string;
+  nativeLabel: string;
+}) {
+  const options = [
+    { id: 'usdt' as const, label: usdtLabel },
+    { id: 'native' as const, label: nativeLabel },
+  ];
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+            className={clsx(
+              'rounded-xl border px-3 py-2.5 text-sm font-medium transition',
+              value === option.id
+                ? 'border-brand-500 bg-brand-500/10 text-brand-300'
+                : 'border-surface-600 bg-surface-800 text-gray-400 hover:border-surface-500'
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -221,5 +259,6 @@ export function CopyrightFooter({ className }: { className?: string }) {
 export function getExplorerTxUrl(network: NetworkId, hash: string, testnet = false): string {
   const cfg = getNetworkConfig(network, testnet);
   if (network === 'tron') return `${cfg.explorerUrl}/#/transaction/${hash}`;
+  if (network === 'solana' && testnet) return `${cfg.explorerUrl}/tx/${hash}?cluster=devnet`;
   return `${cfg.explorerUrl}/tx/${hash}`;
 }

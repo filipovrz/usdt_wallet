@@ -6,6 +6,8 @@ const COINGECKO_IDS: Record<string, string> = {
   eth: 'ethereum',
   bnb: 'binancecoin',
   matic: 'matic-network',
+  sol: 'solana',
+  hnt: 'helium',
 };
 
 export class PriceService {
@@ -31,6 +33,8 @@ export class PriceService {
         eth: data[COINGECKO_IDS.eth]?.[vs] ?? 0,
         bnb: data[COINGECKO_IDS.bnb]?.[vs] ?? 0,
         matic: data[COINGECKO_IDS.matic]?.[vs] ?? 0,
+        sol: data[COINGECKO_IDS.sol]?.[vs] ?? 0,
+        hnt: data[COINGECKO_IDS.hnt]?.[vs] ?? 0,
         currency: settings.currency,
       };
       this.cache = { data: price, ts: Date.now() };
@@ -42,6 +46,8 @@ export class PriceService {
         eth: 0,
         bnb: 0,
         matic: 0,
+        sol: 0,
+        hnt: 0,
         currency: settings.currency,
       };
     }

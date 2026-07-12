@@ -16,6 +16,7 @@ import type {
   ChangePasswordRequest,
   NetworkId,
   FeeTier,
+  SendAssetType,
   TronResources,
   FeeEstimate,
   PriceInfo,
@@ -30,6 +31,8 @@ const api = {
   touchActivity: (): Promise<ApiResponse> => ipcRenderer.invoke(IPC_CHANNELS.TOUCH_ACTIVITY),
   createWallet: (req: CreateWalletRequest): Promise<ApiResponse<{ mnemonic: string; account: WalletAccount }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.CREATE_WALLET, req),
+  finalizeWalletSetup: (req: UnlockRequest): Promise<ApiResponse> =>
+    ipcRenderer.invoke(IPC_CHANNELS.FINALIZE_WALLET_SETUP, req),
   importWallet: (req: ImportWalletRequest): Promise<ApiResponse<{ account: WalletAccount }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.IMPORT_WALLET, req),
   unlock: (req: UnlockRequest): Promise<ApiResponse> => ipcRenderer.invoke(IPC_CHANNELS.UNLOCK, req),
@@ -52,9 +55,10 @@ const api = {
     network: NetworkId,
     to: string,
     amount: string,
-    feeTier?: FeeTier
+    feeTier?: FeeTier,
+    assetType?: SendAssetType
   ): Promise<ApiResponse<SendPreview>> =>
-    ipcRenderer.invoke(IPC_CHANNELS.SEND_PREVIEW, { accountId, network, to, amount, feeTier }),
+    ipcRenderer.invoke(IPC_CHANNELS.SEND_PREVIEW, { accountId, network, to, amount, feeTier, assetType }),
   send: (req: SendRequest): Promise<ApiResponse<{ hash: string }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.SEND, req),
   getTransactions: (accountId?: string): Promise<ApiResponse<TransactionRecord[]>> =>

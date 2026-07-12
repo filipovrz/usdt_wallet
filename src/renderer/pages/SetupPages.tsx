@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -6,7 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 
 import { useWallet } from '../context/WalletContext';
 
-import { Button, Card, Input, ErrorAlert, PasswordStrength } from '../components/ui';
+import { Button, Card, Input, ErrorAlert, PasswordStrength, WarningAlert } from '../components/ui';
 
 import { useNotify } from '../hooks/useNotify';
 
@@ -38,8 +38,6 @@ export function CreateWalletPage() {
 
   const [confirmed, setConfirmed] = useState(false);
 
-
-
   const handleCreate = async (e: React.FormEvent) => {
 
     e.preventDefault();
@@ -69,43 +67,64 @@ export function CreateWalletPage() {
     }
 
     setLoading(true);
-
     setError('');
 
-    const res = await window.walletApi.createWallet({ name, password, passphrase: passphrase || undefined });
+    try {
+      if (!window.walletApi?.createWallet) {
+        throw new Error('WALLET_API_UNAVAILABLE');
+      }
+      const res = await window.walletApi.createWallet({ name, password, passphrase: passphrase || undefined });
 
-    if (res.success && res.data) {
-
-      setMnemonic(res.data.mnemonic);
-
-      setStep('mnemonic');
-
-      notify.success(notify.t.toast.walletCreated);
-
-    } else {
-
-      const msg = res.error ? notify.apiError(res.error) : notify.t.errors.unknown;
-
+      if (res.success && res.data) {
+        setMnemonic(res.data.mnemonic);
+        setStep('mnemonic');
+        notify.success(notify.t.toast.walletCreated);
+      } else {
+        if (res.error === 'VAULT_EXISTS') {
+          await refreshSession();
+          notify.info(t.vaultAlreadyExists);
+          navigate('/unlock', { replace: true });
+          return;
+        }
+        const msg = res.error ? notify.apiError(res.error) : notify.t.errors.unknown;
+        setError(msg);
+        notify.error(msg);
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message === 'WALLET_API_UNAVAILABLE'
+          ? 'Wallet API не е наличен — рестартирайте приложението.'
+          : notify.t.errors.CREATE_WALLET_FAILED;
       setError(msg);
-
+      notify.error(msg);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
   };
 
 
 
   const handleFinish = async () => {
-
     if (!confirmed) return;
-
-    await refreshSession();
-
-    notify.success(notify.t.toast.walletReady);
-
-    navigate('/dashboard');
-
+    setLoading(true);
+    try {
+      const res = await window.walletApi.finalizeWalletSetup({ password });
+      if (res.success) {
+        const session = await refreshSession({ sync: true });
+        notify.success(notify.t.toast.walletReady);
+        navigate(session?.unlocked ? '/dashboard' : '/unlock', { replace: true });
+      } else {
+        const msg = notify.apiError(res.error);
+        notify.error(msg);
+        setError(msg);
+      }
+    } catch {
+      const msg = notify.t.errors.CREATE_WALLET_FAILED;
+      notify.error(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -154,7 +173,7 @@ export function CreateWalletPage() {
 
           </label>
 
-          <Button className="w-full" disabled={!confirmed} onClick={handleFinish}>
+          <Button className="w-full" disabled={!confirmed || loading} onClick={handleFinish}>
 
             {t.continue}
 
@@ -177,6 +196,8 @@ export function CreateWalletPage() {
       <Card className="w-full max-w-md space-y-6">
 
         <h1 className="text-2xl font-bold">{t.createWallet}</h1>
+
+        <WarningAlert message={t.createWalletHint} />
 
         <form onSubmit={handleCreate} className="space-y-4">
 
@@ -293,27 +314,28 @@ export function ImportWalletPage() {
     }
 
     setLoading(true);
-
     setError('');
 
-    const res = await window.walletApi.importWallet({ name, mnemonic, password, passphrase: passphrase || undefined });
+    try {
+      const res = await window.walletApi.importWallet({ name, mnemonic, password, passphrase: passphrase || undefined });
 
-    if (res.success) {
-
-      await refreshSession();
-
-      notify.success(notify.t.toast.walletImported);
-
-      navigate('/dashboard');
-
-    } else {
-      const msg = res.error === 'INVALID_MNEMONIC' ? t.invalidMnemonic : notify.apiError(res.error);
-      if (res.error === 'INVALID_MNEMONIC') notify.error(t.invalidMnemonic);
+      if (res.success) {
+        await refreshSession();
+        notify.success(notify.t.toast.walletImported);
+        navigate('/dashboard');
+      } else {
+        const msg = res.error === 'INVALID_MNEMONIC' ? t.invalidMnemonic : notify.apiError(res.error);
+        if (res.error === 'INVALID_MNEMONIC') notify.error(t.invalidMnemonic);
+        else notify.error(msg);
+        setError(msg);
+      }
+    } catch {
+      const msg = notify.t.errors.unknown;
       setError(msg);
+      notify.error(msg);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
   };
 
 

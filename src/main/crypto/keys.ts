@@ -1,41 +1,18 @@
 import * as bip39 from 'bip39';
 import { HDKey } from '@scure/bip32';
-import { keccak_256 } from '@noble/hashes/sha3';
 import { bytesToHex } from '@noble/hashes/utils';
-import { Wallet, SigningKey, computeAddress } from 'ethers';
+import { Wallet } from 'ethers';
+import { TronWeb } from 'tronweb';
+
+import { deriveSolanaAddress } from '../crypto/solana-keys';
 
 const TRON_PATH = "m/44'/195'/0'/0/0";
 const ETH_PATH = "m/44'/60'/0'/0/0";
 
-const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-
-function base58Encode(buffer: Buffer): string {
-  let num = BigInt('0x' + buffer.toString('hex'));
-  let encoded = '';
-  while (num > 0n) {
-    const remainder = Number(num % 58n);
-    num = num / 58n;
-    encoded = BASE58_ALPHABET[remainder] + encoded;
-  }
-  for (const byte of buffer) {
-    if (byte === 0) encoded = '1' + encoded;
-    else break;
-  }
-  return encoded;
-}
-
 function privateKeyToTronAddress(privateKeyHex: string): string {
-  const signingKey = new SigningKey('0x' + privateKeyHex.replace(/^0x/, ''));
-  const ethAddress = computeAddress(signingKey.publicKey);
-  const addressBytes = Buffer.from(ethAddress.slice(2), 'hex');
-  const hash = keccak_256(addressBytes);
-  const addressBody = hash.slice(-20);
-  const tronBytes = Buffer.concat([Buffer.from([0x41]), Buffer.from(addressBody)]);
-  const hash1 = keccak_256(tronBytes);
-  const hash2 = keccak_256(hash1);
-  const checksum = hash2.slice(0, 4);
-  const fullAddress = Buffer.concat([tronBytes, Buffer.from(checksum)]);
-  return base58Encode(fullAddress);
+  const address = TronWeb.address.fromPrivateKey(privateKeyHex.replace(/^0x/, ''));
+  if (!address) throw new Error('TRON_ADDRESS_DERIVATION_FAILED');
+  return address;
 }
 
 export function generateMnemonic(): string {
@@ -67,6 +44,7 @@ export function getPasswordStrength(password: string): {
 export interface DerivedKeys {
   tronAddress: string;
   ethAddress: string;
+  solanaAddress: string;
   tronPrivateKey: string;
   ethPrivateKey: string;
 }
@@ -87,12 +65,14 @@ export function deriveKeysFromMnemonic(mnemonic: string, passphrase = ''): Deriv
   const ethPrivateKey = bytesToHex(ethNode.privateKey);
   const tronAddress = privateKeyToTronAddress(tronPrivateKey);
   const ethWallet = new Wallet('0x' + ethPrivateKey);
+  const solanaAddress = deriveSolanaAddress(mnemonic, passphrase);
 
   seed.fill(0);
 
   return {
     tronAddress,
     ethAddress: ethWallet.address,
+    solanaAddress,
     tronPrivateKey,
     ethPrivateKey,
   };
@@ -113,5 +93,6 @@ export function createAccountFromMnemonic(name: string, mnemonic: string, passph
     name,
     tronAddress: keys.tronAddress,
     ethAddress: keys.ethAddress,
+    solanaAddress: keys.solanaAddress,
   };
 }

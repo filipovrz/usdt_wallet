@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.2.1] — 2026-07-13
+
+### Поправено
+- **TRON address derivation** — валидни адреси чрез `TronWeb.address.fromPrivateKey`; backfill при unlock
+- **Create wallet** — vault се записва след seed backup (`finalizeWalletSetup`)
+- **Session UI** — `getSession` ApiResponse; routing race; Dashboard crash (`t` undefined)
+- **Testnet EVM** — EIP-55 checksum, Sepolia RPC fallback, resilient balance fetch
+- **electron-store** — config в `%APPDATA%/usdt-wallet/`
+- **Preload** — esbuild bundle за production (`window.walletApi`)
+
+### Добавено
+- E2E test: пълен create wallet flow (`e2e/create-wallet.spec.ts`)
+- `scripts/bundle-preload.mjs`, `scripts/patch-rpc-websockets-uuid.mjs`
+
+## [2.2.0] — 2026-07-12
+
+### Добавено
+- **Solana (HNT SPL)** — баланс, изпращане, история на mainnet
+- **Native SOL send** — изпращане на SOL (fee в SOL)
+- **Vault v3** — автоматично добавяне на `solanaAddress` при unlock на стари портфейли
+- **Цени** — SOL и HNT от CoinGecko
+- **Explorer** — Solscan линкове (devnet cluster при testnet)
+
+### Подобрено
+- Dashboard и Send показват правилния token символ (USDT / HNT) по мрежа
+- Native send за TRX, ETH, BNB, MATIC (от v2.1.x)
+
 ## [2.1.0] — 2026-06-13
 
 ### Добавено

@@ -4,13 +4,16 @@ import type {
   NetworkId,
   BalanceInfo,
   SendPreview,
+  SendAssetType,
   FeeEstimate,
   FeeTier,
   TronResources,
   AppSettings,
+  RemoteTransaction,
 } from '../../shared/types';
-import { getNetworkConfig } from '../../shared/networks';
+import { getNetworkConfig, isSolanaNetwork } from '../../shared/networks';
 import { deriveKeysFromMnemonic } from '../crypto/keys';
+import { SolanaService } from './solana-service';
 import { fetchWithFallback } from './rpc-client';
 
 const ERC20_ABI = [
@@ -40,6 +43,7 @@ function getHeaders(settings: AppSettings): Record<string, string> {
 
 export class BlockchainService {
   private settings: AppSettings;
+  private solana = new SolanaService();
 
   constructor(settings?: AppSettings) {
     this.settings = settings || { trongridApiKey: '' } as AppSettings;
@@ -64,36 +68,55 @@ export class BlockchainService {
   private async createEvmProvider(network: NetworkId): Promise<ethers.JsonRpcProvider> {
     const cfg = this.cfg(network);
     return fetchWithFallback(cfg.rpcUrls, async (url) => {
-      const provider = new ethers.JsonRpcProvider(url, cfg.chainId);
+      const networkObj = ethers.Network.from(cfg.chainId!);
+      const provider = new ethers.JsonRpcProvider(url, networkObj, { staticNetwork: networkObj });
       await provider.getBlockNumber();
       return provider;
     });
   }
 
   async getBalance(network: NetworkId, address: string): Promise<BalanceInfo> {
+    if (isSolanaNetwork(network)) {
+      return this.solana.getBalance(address, this.settings.testnetMode);
+    }
     const cfg = this.cfg(network);
     if (network === 'tron') {
       const tw = this.createTronWeb(network);
-      const contract = await tw.contract().at(cfg.usdtContract);
-      const balanceResult = await contract.balanceOf(address).call();
-      const usdtBalance = BigInt(balanceResult.toString());
-      const trxBalance = await tw.trx.getBalance(address);
-      const trxFormatted = TronWeb.fromSun(trxBalance);
+      let usdt = '0';
+      try {
+        const contract = await tw.contract().at(cfg.usdtContract);
+        const balanceResult = await contract.balanceOf(address).call();
+        usdt = formatUnits(BigInt(balanceResult.toString()), cfg.usdtDecimals);
+      } catch {
+        usdt = '0';
+      }
+      let native = '0';
+      try {
+        const trxBalance = await tw.trx.getBalance(address);
+        native = String(TronWeb.fromSun(trxBalance));
+      } catch {
+        native = '0';
+      }
       return {
-        usdt: formatUnits(usdtBalance, cfg.usdtDecimals),
-        native: String(trxFormatted),
+        usdt,
+        native,
         nativeSymbol: cfg.nativeSymbol,
       };
     }
 
     const provider = await this.createEvmProvider(network);
-    const contract = new ethers.Contract(cfg.usdtContract, ERC20_ABI, provider);
-    const [usdtBal, nativeBal] = await Promise.all([
-      contract.balanceOf(address) as Promise<bigint>,
-      provider.getBalance(address),
-    ]);
+    const checksummed = ethers.getAddress(address);
+    let usdt = '0';
+    try {
+      const contract = new ethers.Contract(ethers.getAddress(cfg.usdtContract), ERC20_ABI, provider);
+      const usdtBal = (await contract.balanceOf(checksummed)) as bigint;
+      usdt = formatUnits(usdtBal, cfg.usdtDecimals);
+    } catch {
+      usdt = '0';
+    }
+    const nativeBal = await provider.getBalance(checksummed);
     return {
-      usdt: formatUnits(usdtBal, cfg.usdtDecimals),
+      usdt,
       native: ethers.formatEther(nativeBal),
       nativeSymbol: cfg.nativeSymbol,
     };
@@ -115,14 +138,22 @@ export class BlockchainService {
   }
 
   async estimateFees(network: NetworkId, from: string, to: string): Promise<FeeEstimate> {
+    if (isSolanaNetwork(network)) {
+      const fee = await this.solana.estimateSolFee(this.settings.testnetMode);
+      return { slow: fee, normal: fee, fast: fee, symbol: 'SOL' };
+    }
     const cfg = this.cfg(network);
     if (network === 'tron') {
       return { slow: '1', normal: '1.5', fast: '3', symbol: 'TRX' };
     }
+    return this.estimateEvmFees(network, 65000n);
+  }
+
+  private async estimateEvmFees(network: NetworkId, gas: bigint): Promise<FeeEstimate> {
+    const cfg = this.cfg(network);
     const provider = await this.createEvmProvider(network);
     const feeData = await provider.getFeeData();
     const base = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
-    const gas = 65000n;
     const fmt = (mult: bigint) => ethers.formatEther(base * gas * mult);
     return {
       slow: fmt(8n / 10n),
@@ -132,12 +163,96 @@ export class BlockchainService {
     };
   }
 
+  private async estimateNativeTransferFee(
+    network: NetworkId,
+    feeTier: FeeTier = 'normal'
+  ): Promise<string> {
+    if (network === 'tron') {
+      return feeTier === 'fast' ? '1' : feeTier === 'slow' ? '0.1' : '0.5';
+    }
+    const fees = await this.estimateEvmFees(network, 21000n);
+    return feeTier === 'fast' ? fees.fast : feeTier === 'slow' ? fees.slow : fees.normal;
+  }
+
+  private pickFeeTier(fees: FeeEstimate, feeTier: FeeTier): string {
+    return feeTier === 'fast' ? fees.fast : feeTier === 'slow' ? fees.slow : fees.normal;
+  }
+
   validateAddress(network: NetworkId, address: string): boolean {
+    if (isSolanaNetwork(network)) return this.solana.validateAddress(address);
     if (network === 'tron') return TronWeb.isAddress(address);
     return ethers.isAddress(address);
   }
 
   async previewSend(
+    network: NetworkId,
+    mnemonic: string,
+    to: string,
+    amount: string,
+    passphrase = '',
+    feeTier: FeeTier = 'normal',
+    assetType: SendAssetType = 'usdt'
+  ): Promise<SendPreview> {
+    if (isSolanaNetwork(network)) {
+      return this.solana.previewSend(
+        mnemonic,
+        to,
+        amount,
+        passphrase,
+        this.settings.testnetMode,
+        assetType
+      );
+    }
+    if (assetType === 'native') {
+      return this.previewSendNative(network, mnemonic, to, amount, passphrase, feeTier);
+    }
+
+    const cfg = this.cfg(network);
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
+    const balance = await this.getBalance(network, from);
+
+    let fee = '1.1';
+    if (network === 'tron') {
+      fee = feeTier === 'fast' ? '3' : feeTier === 'slow' ? '1' : '1.5';
+    } else {
+      const fees = await this.estimateFees(network, from, to);
+      fee = this.pickFeeTier(fees, feeTier);
+    }
+
+    const nativeBal = parseFloat(balance.native);
+    const usdtBal = parseFloat(balance.usdt);
+    const amountNum = parseFloat(amount);
+    const minRequired = cfg.minNativeForSend;
+    const hasEnoughNative = nativeBal >= minRequired;
+    const hasEnoughAsset = usdtBal >= amountNum;
+
+    let warning: string | undefined;
+    if (!hasEnoughAsset) {
+      warning = `INSUFFICIENT_ASSET:USDT:${amount}`;
+    } else if (!hasEnoughNative) {
+      warning = `INSUFFICIENT_NATIVE:${cfg.nativeSymbol}:${minRequired}`;
+    }
+
+    return {
+      to,
+      amount,
+      fee,
+      feeSymbol: cfg.nativeSymbol,
+      totalUsdt: amount,
+      network,
+      assetType: 'usdt',
+      assetSymbol: 'USDT',
+      assetBalance: balance.usdt,
+      hasEnoughAsset,
+      nativeBalance: balance.native,
+      minNativeRequired: String(minRequired),
+      hasEnoughNative,
+      warning,
+    };
+  }
+
+  private async previewSendNative(
     network: NetworkId,
     mnemonic: string,
     to: string,
@@ -149,22 +264,20 @@ export class BlockchainService {
     const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
     const balance = await this.getBalance(network, from);
-
-    let fee = '1.1';
-    if (network === 'tron') {
-      fee = feeTier === 'fast' ? '3' : feeTier === 'slow' ? '1' : '1.5';
-    } else {
-      const fees = await this.estimateFees(network, from, to);
-      fee = feeTier === 'fast' ? fees.fast : feeTier === 'slow' ? fees.slow : fees.normal;
-    }
+    const fee = await this.estimateNativeTransferFee(network, feeTier);
 
     const nativeBal = parseFloat(balance.native);
-    const minRequired = cfg.minNativeForSend;
-    const hasEnoughNative = nativeBal >= minRequired;
+    const amountNum = parseFloat(amount);
+    const feeNum = parseFloat(fee);
+    const totalRequired = amountNum + feeNum;
+    const hasEnoughAsset = nativeBal >= totalRequired;
+    const remaining = nativeBal - totalRequired;
 
     let warning: string | undefined;
-    if (!hasEnoughNative) {
-      warning = `INSUFFICIENT_NATIVE:${cfg.nativeSymbol}:${minRequired}`;
+    if (!hasEnoughAsset) {
+      warning = `INSUFFICIENT_NATIVE:${cfg.nativeSymbol}:${totalRequired.toFixed(6)}`;
+    } else if (remaining < cfg.minNativeForSend) {
+      warning = `LOW_NATIVE_RESERVE:${cfg.nativeSymbol}:${cfg.minNativeForSend}`;
     }
 
     return {
@@ -174,9 +287,13 @@ export class BlockchainService {
       feeSymbol: cfg.nativeSymbol,
       totalUsdt: amount,
       network,
+      assetType: 'native',
+      assetSymbol: cfg.nativeSymbol,
+      assetBalance: balance.native,
+      hasEnoughAsset,
       nativeBalance: balance.native,
-      minNativeRequired: String(minRequired),
-      hasEnoughNative,
+      minNativeRequired: totalRequired.toFixed(6),
+      hasEnoughNative: hasEnoughAsset,
       warning,
     };
   }
@@ -187,10 +304,17 @@ export class BlockchainService {
     to: string,
     amount: string,
     passphrase = '',
-    feeTier: FeeTier = 'normal'
-  ): Promise<{ hash: string; fee: string; from: string }> {
-    const preview = await this.previewSend(network, mnemonic, to, amount, passphrase, feeTier);
-    if (!preview.hasEnoughNative) {
+    feeTier: FeeTier = 'normal',
+    assetType: SendAssetType = 'usdt'
+  ): Promise<{ hash: string; fee: string; from: string; assetSymbol: string }> {
+    if (isSolanaNetwork(network)) {
+      return this.solana.send(mnemonic, to, amount, passphrase, this.settings.testnetMode, assetType);
+    }
+    const preview = await this.previewSend(network, mnemonic, to, amount, passphrase, feeTier, assetType);
+    if (!preview.hasEnoughAsset) {
+      throw new Error(preview.warning || 'INSUFFICIENT_ASSET');
+    }
+    if (assetType === 'usdt' && !preview.hasEnoughNative) {
       throw new Error(preview.warning || 'INSUFFICIENT_NATIVE');
     }
 
@@ -198,6 +322,10 @@ export class BlockchainService {
     const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
     const privateKey = network === 'tron' ? keys.tronPrivateKey : keys.ethPrivateKey;
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
+
+    if (assetType === 'native') {
+      return this.sendNative(network, privateKey, from, to, amount, preview.fee, cfg.nativeSymbol, feeTier);
+    }
 
     if (network === 'tron') {
       const tw = this.createTronWeb(network);
@@ -210,20 +338,61 @@ export class BlockchainService {
         shouldPollResponse: true,
       });
       const hash = typeof tx === 'string' ? tx : tx.txid || String(tx);
-      return { hash, fee: preview.fee, from };
+      return { hash, fee: preview.fee, from, assetSymbol: 'USDT' };
     }
 
     const provider = await this.createEvmProvider(network);
     const wallet = new ethers.Wallet('0x' + privateKey.replace(/^0x/, ''), provider);
-    const contract = new ethers.Contract(cfg.usdtContract, ERC20_ABI, wallet);
+    const contract = new ethers.Contract(ethers.getAddress(cfg.usdtContract), ERC20_ABI, wallet);
     const amountUnits = parseUnits(amount, cfg.usdtDecimals);
-    const tx = await contract.transfer(to, amountUnits);
+    const tx = await contract.transfer(ethers.getAddress(to), amountUnits);
     const receipt = await tx.wait();
     const fee = receipt ? ethers.formatEther(receipt.gasUsed * receipt.gasPrice) : preview.fee;
-    return { hash: tx.hash, fee, from };
+    return { hash: tx.hash, fee, from, assetSymbol: 'USDT' };
   }
 
-  async fetchTransactions(network: NetworkId, address: string, limit = 20) {
+  private async sendNative(
+    network: NetworkId,
+    privateKey: string,
+    from: string,
+    to: string,
+    amount: string,
+    previewFee: string,
+    assetSymbol: string,
+    feeTier: FeeTier
+  ): Promise<{ hash: string; fee: string; from: string; assetSymbol: string }> {
+    if (network === 'tron') {
+      const tw = this.createTronWeb(network);
+      tw.setPrivateKey(privateKey);
+      const amountSun = Math.round(parseFloat(amount) * 1_000_000);
+      const tx = await tw.trx.sendTransaction(to, amountSun);
+      if (!tx.result) {
+        throw new Error(tx.message || 'SEND_FAILED');
+      }
+      const hash = tx.txid || tx.transaction?.txID || String(tx);
+      return { hash, fee: previewFee, from, assetSymbol };
+    }
+
+    const provider = await this.createEvmProvider(network);
+    const wallet = new ethers.Wallet('0x' + privateKey.replace(/^0x/, ''), provider);
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
+    const mult = feeTier === 'fast' ? 15n : feeTier === 'slow' ? 8n : 10n;
+    const tx = await wallet.sendTransaction({
+      to,
+      value: ethers.parseEther(amount),
+      gasLimit: 21000n,
+      gasPrice: (gasPrice * mult) / 10n,
+    });
+    const receipt = await tx.wait();
+    const fee = receipt ? ethers.formatEther(receipt.gasUsed * receipt.gasPrice) : previewFee;
+    return { hash: tx.hash, fee, from, assetSymbol };
+  }
+
+  async fetchTransactions(network: NetworkId, address: string, limit = 20): Promise<RemoteTransaction[]> {
+    if (isSolanaNetwork(network)) {
+      return this.solana.fetchTransactions(address, this.settings.testnetMode, limit);
+    }
     const cfg = this.cfg(network);
     if (network === 'tron') {
       try {

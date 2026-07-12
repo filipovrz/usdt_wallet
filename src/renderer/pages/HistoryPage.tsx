@@ -120,7 +120,7 @@ export function HistoryPage() {
 
                     <Badge>{getNetworkConfig(tx.network, settings.testnetMode).name}</Badge>
 
-                    <p className="mt-1 font-semibold">{tx.direction === 'in' ? '+' : '-'}{tx.amount} USDT</p>
+                    <p className="mt-1 font-semibold">{tx.direction === 'in' ? '+' : '-'}{tx.amount} {tx.assetSymbol || getNetworkConfig(tx.network, settings.testnetMode).symbol}</p>
 
                     <p className="text-xs text-gray-500">{format(new Date(tx.timestamp), 'dd.MM.yyyy HH:mm')}</p>
 

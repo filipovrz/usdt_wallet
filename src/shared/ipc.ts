@@ -36,6 +36,7 @@ export const IPC_CHANNELS = {
   SCAN_HARDWARE: 'wallet:scan-hardware',
   GET_HARDWARE_ADDRESS: 'wallet:get-hardware-address',
   DEPLOY_MULTISIG: 'wallet:deploy-multisig',
+  FINALIZE_WALLET_SETUP: 'wallet:finalize-setup',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

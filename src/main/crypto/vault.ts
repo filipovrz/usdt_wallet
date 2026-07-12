@@ -23,13 +23,18 @@ interface VaultPayload {
   passphrase?: string;
 }
 
-export function deriveKey(password: string, salt: Buffer): Buffer {
-  return crypto.scryptSync(password, salt, 32, SCRYPT_OPTIONS);
+export function deriveKey(password: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 32, SCRYPT_OPTIONS, (err, key) => {
+      if (err) reject(err);
+      else resolve(key);
+    });
+  });
 }
 
 async function encryptPayload(payload: VaultPayload, password: string): Promise<EncryptedVault> {
   const salt = crypto.randomBytes(32);
-  const key = deriveKey(password, salt);
+  const key = await deriveKey(password, salt);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()]);
@@ -49,7 +54,7 @@ async function decryptPayload(vault: EncryptedVault, password: string): Promise<
   const iv = Buffer.from(vault.iv, 'base64');
   const authTag = Buffer.from(vault.authTag, 'base64');
   const ciphertext = Buffer.from(vault.ciphertext, 'base64');
-  const key = deriveKey(password, salt);
+  const key = await deriveKey(password, salt);
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(authTag);
   try {

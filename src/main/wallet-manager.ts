@@ -23,6 +23,7 @@ import {
   type NetworkId,
   type MultisigPolicy,
   type FeeTier,
+  type SendAssetType,
   type TronResources,
   type FeeEstimate,
   type UpdateInfo,
@@ -40,7 +41,9 @@ import {
   validateMnemonic,
   normalizeMnemonic,
   createAccountFromMnemonic,
+  deriveKeysFromMnemonic,
 } from './crypto/keys';
+import { getNetworkConfig } from '../shared/networks';
 import { BlockchainService } from './services/blockchain';
 import { PriceService } from './services/price-service';
 import {
@@ -74,15 +77,24 @@ export class WalletManager {
   private autoLockTimer: NodeJS.Timeout | null = null;
   private blockchain = new BlockchainService(DEFAULT_SETTINGS);
   private prices = new PriceService();
-  private store = new Store<{ vault?: EncryptedVault; security: SecurityState }>({
-    name: 'usdt-wallet-config',
-    encryptionKey: 'usdt-wallet-local-encryption-v1',
-    defaults: { security: { failedAttempts: 0 } as SecurityState },
-  });
+  private store: Store<{ vault?: EncryptedVault; security: SecurityState }>;
   private vaultPath: string;
+  private pendingSetup: {
+    meta: VaultMeta;
+    mnemonic: string;
+    passphrase: string;
+    password: string;
+  } | null = null;
 
   constructor() {
-    this.vaultPath = path.join(app.getPath('userData'), 'vault.enc.json');
+    const userData = app.getPath('userData');
+    this.vaultPath = path.join(userData, 'vault.enc.json');
+    this.store = new Store<{ vault?: EncryptedVault; security: SecurityState }>({
+      name: 'usdt-wallet-config',
+      cwd: userData,
+      encryptionKey: 'usdt-wallet-local-encryption-v1',
+      defaults: { security: { failedAttempts: 0 } as SecurityState },
+    });
   }
 
   private get hasVaultFile(): boolean {
@@ -187,7 +199,28 @@ export class WalletManager {
     this.lastActivity = Date.now();
     this.resetFailedAttempts();
     this.syncBlockchainSettings();
+    await this.backfillDerivedAddresses(mnemonic, passphrase);
     this.startAutoLockTimer();
+  }
+
+  /** Re-derive chain addresses when vault metadata is stale or from an older wallet version. */
+  private async backfillDerivedAddresses(mnemonic: string, passphrase: string): Promise<void> {
+    if (!this.meta) return;
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    let changed = false;
+    this.meta.accounts = this.meta.accounts.map((acc) => {
+      let next = acc;
+      if (!acc.solanaAddress || acc.solanaAddress !== keys.solanaAddress) {
+        changed = true;
+        next = { ...next, solanaAddress: keys.solanaAddress };
+      }
+      if (acc.tronAddress !== keys.tronAddress) {
+        changed = true;
+        next = { ...next, tronAddress: keys.tronAddress };
+      }
+      return next;
+    });
+    if (changed) await this.persistMeta();
   }
 
   async createWallet(
@@ -195,22 +228,47 @@ export class WalletManager {
     password: string,
     passphrase = ''
   ): Promise<ApiResponse<{ mnemonic: string; account: WalletAccount }>> {
+    try {
+      if (this.hasVaultFile) return { success: false, error: 'VAULT_EXISTS' };
+      const mnemonic = generateMnemonic();
+      const account = this.makeAccount(name, mnemonic, passphrase);
+      this.pendingSetup = {
+        meta: {
+          version: VAULT_VERSION,
+          createdAt: new Date().toISOString(),
+          accounts: [account],
+          addressBook: [],
+          transactions: [],
+          multisigPolicies: [],
+          settings: { ...DEFAULT_SETTINGS },
+        },
+        mnemonic,
+        passphrase,
+        password,
+      };
+      return { success: true, data: { mnemonic, account } };
+    } catch (e) {
+      console.error('createWallet failed:', e);
+      return { success: false, error: e instanceof Error ? e.message : 'CREATE_WALLET_FAILED' };
+    }
+  }
+
+  async finalizeWalletSetup(password: string): Promise<ApiResponse> {
+    if (!this.pendingSetup) return { success: false, error: 'NO_PENDING_WALLET' };
+    if (password !== this.pendingSetup.password) return { success: false, error: 'INVALID_PASSWORD' };
     if (this.hasVaultFile) return { success: false, error: 'VAULT_EXISTS' };
-    const mnemonic = generateMnemonic();
-    const account = this.makeAccount(name, mnemonic, passphrase);
-    this.meta = {
-      version: VAULT_VERSION,
-      createdAt: new Date().toISOString(),
-      accounts: [account],
-      addressBook: [],
-      transactions: [],
-      multisigPolicies: [],
-      settings: { ...DEFAULT_SETTINGS },
-    };
-    const encrypted = await encryptVaultWithPassphrase(this.meta, mnemonic, passphrase, password);
-    this.saveEncryptedVault(encrypted);
-    await this.initSession(mnemonic, passphrase, password);
-    return { success: true, data: { mnemonic, account } };
+    const { meta, mnemonic, passphrase, password: setupPassword } = this.pendingSetup;
+    try {
+      const encrypted = await encryptVaultWithPassphrase(meta, mnemonic, passphrase, setupPassword);
+      this.saveEncryptedVault(encrypted);
+      this.meta = meta;
+      this.pendingSetup = null;
+      await this.initSession(mnemonic, passphrase, setupPassword);
+      return { success: true };
+    } catch (e) {
+      console.error('finalizeWalletSetup failed:', e);
+      return { success: false, error: 'CREATE_WALLET_FAILED' };
+    }
   }
 
   async importWallet(
@@ -313,7 +371,8 @@ export class WalletManager {
     try {
       const balance = await this.blockchain.getBalance(network, getAccountAddress(account, network));
       const prices = await this.prices.getPrices(this.meta.settings);
-      balance.usdValue = this.prices.formatUsdValue(balance.usdt, prices.usdt, this.meta.settings.currency);
+      const tokenPrice = network === 'solana' ? prices.hnt : prices.usdt;
+      balance.usdValue = this.prices.formatUsdValue(balance.usdt, tokenPrice, this.meta.settings.currency);
       return { success: true, data: balance };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'BALANCE_ERROR' };
@@ -347,7 +406,8 @@ export class WalletManager {
     network: NetworkId,
     to: string,
     amount: string,
-    feeTier?: FeeTier
+    feeTier?: FeeTier,
+    assetType: SendAssetType = 'usdt'
   ): Promise<ApiResponse<SendPreview>> {
     if (!this.unlocked || !this.meta || !this.mnemonic) return { success: false, error: 'LOCKED_WALLET' };
     if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
@@ -359,7 +419,8 @@ export class WalletManager {
         to,
         amount,
         this.passphrase,
-        feeTier || this.meta.settings.defaultFeeTier
+        feeTier || this.meta.settings.defaultFeeTier,
+        assetType
       );
       return { success: true, data: preview };
     } catch (e) {
@@ -373,7 +434,8 @@ export class WalletManager {
     to: string,
     amount: string,
     password: string,
-    feeTier?: FeeTier
+    feeTier?: FeeTier,
+    assetType: SendAssetType = 'usdt'
   ): Promise<ApiResponse<{ hash: string }>> {
     if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
     if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
@@ -396,7 +458,8 @@ export class WalletManager {
         to,
         amount,
         this.passphrase,
-        feeTier || this.meta.settings.defaultFeeTier
+        feeTier || this.meta.settings.defaultFeeTier,
+        assetType
       );
       this.meta.transactions.unshift({
         id: uuidv4(),
@@ -410,6 +473,7 @@ export class WalletManager {
         timestamp: Date.now(),
         status: 'confirmed',
         accountId,
+        assetSymbol: result.assetSymbol,
       });
       await this.persistMeta();
       return { success: true, data: { hash: result.hash } };
@@ -455,6 +519,7 @@ export class WalletManager {
             timestamp: tx.timestamp,
             status: 'confirmed',
             accountId,
+            assetSymbol: tx.assetSymbol || getNetworkConfig(network, this.meta!.settings.testnetMode).symbol,
           });
         }
       }

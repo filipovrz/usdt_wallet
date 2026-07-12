@@ -74,10 +74,10 @@ function AppRoutes() {
       />
       <Route
         path="/unlock"
-        element={session.hasVault && !session.unlocked ? <UnlockPage /> : <Navigate to="/" replace />}
+        element={session.unlocked ? <Navigate to="/dashboard" replace /> : <UnlockPage />}
       />
-      <Route path="/create" element={!session.hasVault ? <CreateWalletPage /> : <Navigate to="/" replace />} />
-      <Route path="/import" element={!session.hasVault ? <ImportWalletPage /> : <Navigate to="/" replace />} />
+      <Route path="/create" element={<CreateWalletPage />} />
+      <Route path="/import" element={!session.hasVault ? <ImportWalletPage /> : <Navigate to="/unlock" replace />} />
       <Route path="/*" element={<ProtectedRoutes />} />
     </Routes>
   );

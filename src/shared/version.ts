@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.2.1';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -10,6 +10,27 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '2.2.1',
+    date: '2026-07-13',
+    changes: [
+      'TRON address derivation fix + vault backfill при unlock',
+      'Create wallet: vault след seed backup (finalizeWalletSetup)',
+      'Session IPC + UI routing fixes, testnet RPC/checksum',
+      'Preload esbuild bundle, E2E create-wallet test',
+    ],
+  },
+  {
+    version: '2.2.0',
+    date: '2026-07-12',
+    changes: [
+      'Solana mainnet — SOL + HNT (SPL) баланс, изпращане, история',
+      'Native send — TRX, ETH, BNB, MATIC, SOL',
+      'Автоматична Solana адреса при unlock (vault v3 migration)',
+      'CoinGecko цени за SOL и HNT',
+      'Solscan explorer линкове (вкл. devnet)',
+    ],
+  },
   {
     version: '2.1.0',
     date: '2026-06-13',
