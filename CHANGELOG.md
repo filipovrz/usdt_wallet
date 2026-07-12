@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.2.2] — 2026-07-13
+
+### Поправено
+- **EVM address** — адресът се взима live от seed при unlock; backfill за `ethAddress`
+- **Receive** — показва 42/42 символа; предупреждение при невалиден Ethereum адрес
+- **Send TRON** — блокира self-send (същия TRON адрес)
+
+### Добавено
+- `scripts/restart-wallet.ps1` — рестарт на приложението с една команда
+- Help/README: Sepolia faucets без mainnet ETH (Chainlink, Google Cloud)
+
 ## [2.2.1] — 2026-07-13
 
 ### Поправено

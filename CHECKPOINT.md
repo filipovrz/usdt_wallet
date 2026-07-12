@@ -1,8 +1,8 @@
 # USDT Wallet — Checkpoint
 
-**Версия:** 2.2.1 · **Дата:** 13.07.2026 · **Copyright:** © Evtinko Auctions  
+**Версия:** 2.2.2 · **Дата:** 13.07.2026 · **Copyright:** © Evtinko Auctions  
 **Repository:** https://github.com/filipovrz/usdt_wallet  
-**Статус:** v2.2.1 — Solana/HNT + критични hotfix-и · **Ръчно testnet тестване в процес**
+**Статус:** v2.2.2 — testnet тестване **пауза** (Sepolia faucet не дава ETH)
 
 ---
 
@@ -11,14 +11,31 @@
 | Стъпка | Резултат | Бележка |
 |--------|----------|---------|
 | 1 Отключване / Табло | ✅ Да | |
-| 2 Смяна на мрежи + Refresh | ✅ Да | След TRON address fix + v2.2.1 |
+| 2 Смяна на мрежи + Refresh | ✅ Да | |
 | 3 Получи / копиране адрес | ✅ Да | |
 | 4 Заключи / отключи | ✅ Да | |
 | 5 Testnet mode | ✅ Включен | Settings → Testnet mode |
-| 6 TRON Shasta faucet | ⏸ | `shasta.tronscan.org/#/tools/faucet` → **404** · използвай **https://shasta.tronex.io/join/getJoinPage** |
-| 7 TRON test send | ❌ | Преди fix: грешен TRON адрес · след fix: нужен faucet |
-| 8 Sepolia ETH | ❌ | RPC/checksum fix в v2.2.1 · нужен faucet |
-| 9 Solana Devnet | ❌ | faucet.solana.com иска **GitHub login** |
+| 6 TRON Shasta faucet | ✅ Да | **shasta.tronex.io** (~2000 TRX) |
+| 7a TRX баланс | ✅ Да | |
+| 7b TRON send | ✅ Да | 10 TRX → `TMnECT3Bqpimkg6vXHeWmw68MTQksHQrQy` |
+| 7c TRON история | ✅ Да | Изходяща -10 TRX Shasta |
+| 8a–8b Sepolia faucet | ❌ | Alchemy иска mainnet ETH · Chainlink — ETH не пристигна |
+| 8c Sepolia send | ❌ | Недостатъчен native баланс (0 ETH) |
+| 8d Sepolia история | ❌ | Няма tx (8c не мина) |
+| 9 Solana Devnet | ⏸ | faucet.solana.com иска **GitHub login** |
+
+---
+
+## v2.2.2 — Hotfix (13.07.2026, нощ)
+
+| Fix | Файл(ове) | Описание |
+|-----|-----------|----------|
+| **EVM address live** | `wallet-manager.ts` | Ethereum адрес **винаги от seed** при unlock (не stale vault) |
+| **EVM backfill** | `wallet-manager.ts`, `keys.ts` | `ethAddress` backfill + EIP-55 `getAddress()` |
+| **Receive UX** | `ReceivePage.tsx` | Показва **42/42 символа**, предупреждение при невалиден адрес |
+| **TRON self-send** | `SendPage.tsx` | Блокира изпращане TRX към същия адрес |
+| **Faucet help** | `help-content.ts` | Chainlink/Google Cloud (без mainnet ETH) |
+| **Restart script** | `scripts/restart-wallet.ps1` | `powershell -File scripts/restart-wallet.ps1` |
 
 ---
 
@@ -73,7 +90,7 @@ npm run build   → OK ✓
 cd "D:\Filipov Ne Pipai\Pgojects\usdt_wallet"
 npm install
 npm run build
-$env:NODE_ENV='production'; npx electron .
+powershell -ExecutionPolicy Bypass -File scripts/restart-wallet.ps1
 npm test
 npm run test:e2e
 npm run electron:dev
@@ -88,7 +105,8 @@ $env:CSC_IDENTITY_AUTO_DISCOVERY='false'; npm run electron:build:win
 |-------|--------|
 | TRON Shasta | https://shasta.tronex.io/join/getJoinPage |
 | TRON Shasta (alt) | Telegram/Discord: `!shasta <T-адрес>` |
-| Ethereum Sepolia | https://sepoliafaucet.com |
+| Ethereum Sepolia | https://faucets.chain.link/sepolia (без mainnet ETH) |
+| Ethereum Sepolia (alt) | https://cloud.google.com/application/web3/faucet/ethereum/sepolia |
 | Solana Devnet | https://faucet.solana.com (изисква GitHub) |
 
 ⚠️ **Не ползвай** `shasta.tronscan.org/#/tools/faucet` — връща 404.
@@ -119,14 +137,13 @@ $env:CSC_IDENTITY_AUTO_DISCOVERY='false'; npm run electron:build:win
 
 ---
 
-## Следващи стъпки
+## Следващи стъпки (след пауза)
 
-1. Faucet TRX от **shasta.tronex.io** → нов TRON адрес от **Получи**
-2. Test send 10 TRX (Native) на себе си
-3. Sepolia ETH faucet → test send
-4. Solana Devnet (GitHub login) → test SOL
-5. Build installer: `npm run electron:build:win`
+1. Sepolia ETH — **https://faucets.chain.link/sepolia** или Google Cloud Web3 faucet
+2. Табло → Sepolia → Refresh → **Изпрати 0.0005 ETH**
+3. Solana Devnet (GitHub login) → test SOL
+4. Build installer: `npm run electron:build:win`
 
 ---
 
-*Checkpoint v2.2.1 — 13.07.2026 00:59*
+*Checkpoint v2.2.2 — 13.07.2026 01:55*

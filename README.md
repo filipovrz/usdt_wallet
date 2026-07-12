@@ -80,6 +80,9 @@
 cd "d:\Filipov Ne Pipai\Pgojects\usdt_wallet"
 npm install
 npm run electron:dev
+# Production (след build):
+npm run build
+powershell -ExecutionPolicy Bypass -File scripts/restart-wallet.ps1
 ```
 
 ---
@@ -115,7 +118,7 @@ npm run electron:build:win
 | Мрежа | Faucet |
 |-------|--------|
 | TRON Shasta | https://shasta.tronex.io/join/getJoinPage |
-| Ethereum Sepolia | https://sepoliafaucet.com |
+| Ethereum Sepolia | https://faucets.chain.link/sepolia (без mainnet ETH) |
 | Solana Devnet | https://faucet.solana.com (GitHub login) |
 
 4. **Табло** → Refresh → test send (Native TRX/ETH/SOL)

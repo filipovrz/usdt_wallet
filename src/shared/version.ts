@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '2.2.1';
+export const APP_VERSION = '2.2.2';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -10,6 +10,15 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '2.2.2',
+    date: '2026-07-13',
+    changes: [
+      'EVM address live от seed + ethAddress backfill',
+      'Receive: 42/42 символа, TRON self-send блок',
+      'restart-wallet.ps1, Sepolia faucet help',
+    ],
+  },
   {
     version: '2.2.1',
     date: '2026-07-13',

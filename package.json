@@ -1,6 +1,6 @@
 {
   "name": "usdt-wallet",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Professional non-custodial multi-chain desktop wallet — USDT, native coins, Solana HNT",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",

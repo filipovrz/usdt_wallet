@@ -15,6 +15,7 @@ import {
 } from '../components/ui';
 import type { SendPreview, AddressBookEntry, FeeTier, SendAssetType } from '@shared/types';
 import { getNetworkConfig, isSolanaNetwork } from '@shared/networks';
+import { getAccountAddress } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 import { formatApiError } from '../i18n/api-messages';
 
@@ -58,6 +59,15 @@ export function SendPage() {
     setLoading(true);
     setError('');
     setWarning('');
+
+    const ownAddress = getAccountAddress(activeAccount, activeNetwork);
+    if (activeNetwork === 'tron' && to.trim() === ownAddress) {
+      const msg = notify.t.errors.SAME_ACCOUNT_TRON;
+      setError(msg);
+      notify.error(msg);
+      setLoading(false);
+      return;
+    }
 
     const res = await window.walletApi.sendPreview(
       activeAccount.id,

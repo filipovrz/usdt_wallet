@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Card, NetworkSelector, CopyButton, LoadingSpinner } from '../components/ui';
-import { getAccountAddress } from '@shared/types';
+import { Card, NetworkSelector, CopyButton, LoadingSpinner, ErrorAlert } from '../components/ui';
+import { getAccountAddress, isEvmNetwork, isValidEvmAddress } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 
 export function ReceivePage() {
@@ -23,17 +23,25 @@ export function ReceivePage() {
 
   if (!activeAccount) return <LoadingSpinner />;
 
+  const evmInvalid = isEvmNetwork(activeNetwork) && address.length > 0 && !isValidEvmAddress(address);
+
   return (
     <div className="p-8">
       <h1 className="mb-6 text-2xl font-bold">{t.receive}</h1>
       <Card className="max-w-md space-y-6 text-center">
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
-        {qrDataUrl && (
+        {evmInvalid && (
+          <ErrorAlert message="Невалиден Ethereum адрес — заключете и отключете портфейла отново." />
+        )}
+        {qrDataUrl && !evmInvalid && (
           <div className="mx-auto w-fit rounded-2xl bg-white p-4">
             <img src={qrDataUrl} alt="QR" className="h-[280px] w-[280px]" />
           </div>
         )}
-        <p className="break-all font-mono text-xs text-brand-300">{address}</p>
+        <p className="select-all break-all font-mono text-sm text-brand-300">{address}</p>
+        {isEvmNetwork(activeNetwork) && address && (
+          <p className="text-xs text-gray-500">{address.length} / 42 символа</p>
+        )}
         <CopyButton
           text={address}
           label={t.copy}

@@ -112,6 +112,7 @@ async function runTests() {
     assert(keys1.solanaAddress === keys2.solanaAddress, 'solana address not deterministic');
     assert(keys1.tronAddress.startsWith('T'), `tron address format: ${keys1.tronAddress}`);
     assert(keys1.ethAddress.startsWith('0x'), `eth address format: ${keys1.ethAddress}`);
+    assert(keys1.ethAddress.length === 42, `eth address length: ${keys1.ethAddress.length}`);
     assert(keys1.solanaAddress.length >= 32, `solana address format: ${keys1.solanaAddress}`);
     ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…, SOL: ${keys1.solanaAddress.slice(0, 8)}…)`);
   } catch (e) {
@@ -129,6 +130,7 @@ async function runTests() {
     assert(bc.validateAddress('polygon', '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'), 'valid polygon rejected');
     const keys = deriveKeysFromMnemonic(TEST_MNEMONIC);
     assert(bc.validateAddress('tron', keys.tronAddress), 'derived tron address invalid');
+    assert(bc.validateAddress('ethereum', keys.ethAddress), 'derived eth address invalid');
     assert(bc.validateAddress('solana', keys.solanaAddress), 'valid solana rejected');
     assert(!bc.validateAddress('solana', 'not-a-valid-solana-address'), 'invalid solana accepted');
     assert(!bc.validateAddress('solana', keys.tronAddress), 'tron addr on solana accepted');

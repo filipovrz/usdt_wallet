@@ -1,7 +1,7 @@
 import * as bip39 from 'bip39';
 import { HDKey } from '@scure/bip32';
 import { bytesToHex } from '@noble/hashes/utils';
-import { Wallet } from 'ethers';
+import { Wallet, getAddress } from 'ethers';
 import { TronWeb } from 'tronweb';
 
 import { deriveSolanaAddress } from '../crypto/solana-keys';
@@ -71,7 +71,7 @@ export function deriveKeysFromMnemonic(mnemonic: string, passphrase = ''): Deriv
 
   return {
     tronAddress,
-    ethAddress: ethWallet.address,
+    ethAddress: getAddress(ethWallet.address),
     solanaAddress,
     tronPrivateKey,
     ethPrivateKey,

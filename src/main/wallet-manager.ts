@@ -158,10 +158,27 @@ export class WalletManager {
     return {
       unlocked: this.unlocked,
       hasVault: this.hasVaultFile,
-      accounts: this.meta?.accounts || [],
+      accounts: this.getAccountsWithLiveAddresses(),
       settings: this.meta?.settings || DEFAULT_SETTINGS,
       failedAttempts: security.failedAttempts,
       lockedUntil: security.lockedUntil,
+    };
+  }
+
+  /** Always derive chain addresses from seed when unlocked — vault metadata may be stale. */
+  private getAccountsWithLiveAddresses(): WalletAccount[] {
+    const accounts = this.meta?.accounts || [];
+    if (!this.unlocked || !this.mnemonic) return accounts;
+    const keys = deriveKeysFromMnemonic(this.mnemonic, this.passphrase);
+    return accounts.map((acc) => this.applyDerivedKeys(acc, keys));
+  }
+
+  private applyDerivedKeys(account: WalletAccount, keys: ReturnType<typeof deriveKeysFromMnemonic>): WalletAccount {
+    return {
+      ...account,
+      tronAddress: keys.tronAddress,
+      ethAddress: keys.ethAddress,
+      solanaAddress: keys.solanaAddress,
     };
   }
 
@@ -209,14 +226,13 @@ export class WalletManager {
     const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
     let changed = false;
     this.meta.accounts = this.meta.accounts.map((acc) => {
-      let next = acc;
-      if (!acc.solanaAddress || acc.solanaAddress !== keys.solanaAddress) {
+      const next = this.applyDerivedKeys(acc, keys);
+      if (
+        next.tronAddress !== acc.tronAddress ||
+        next.ethAddress !== acc.ethAddress ||
+        next.solanaAddress !== acc.solanaAddress
+      ) {
         changed = true;
-        next = { ...next, solanaAddress: keys.solanaAddress };
-      }
-      if (acc.tronAddress !== keys.tronAddress) {
-        changed = true;
-        next = { ...next, tronAddress: keys.tronAddress };
       }
       return next;
     });

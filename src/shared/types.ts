@@ -231,6 +231,14 @@ export interface UpdateInfo {
   downloaded?: boolean;
 }
 
+export function isValidEvmAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+export function isEvmNetwork(network: NetworkId): boolean {
+  return network === 'ethereum' || network === 'bsc' || network === 'polygon';
+}
+
 export function getAccountAddress(account: WalletAccount, network: NetworkId): string {
   if (network === 'tron') return account.tronAddress;
   if (network === 'solana') return account.solanaAddress || '';
