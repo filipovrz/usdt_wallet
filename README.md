@@ -1,5 +1,7 @@
 # USDT Wallet
 
+**Repository:** [github.com/filipovrz/usdt_wallet](https://github.com/filipovrz/usdt_wallet)
+
 Професионален **некастодиален** desktop портфейл за **USDT** — TRC-20 (TRON) и ERC-20 (Ethereum).
 
 **Текуща версия: 2.1.0**

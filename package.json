@@ -103,8 +103,9 @@
       "category": "Finance"
     },
     "publish": {
-      "provider": "generic",
-      "url": "https://releases.usdt-wallet.local/win"
+      "provider": "github",
+      "owner": "filipovrz",
+      "repo": "usdt_wallet"
     }
   }
 }

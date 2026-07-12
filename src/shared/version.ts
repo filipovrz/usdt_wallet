@@ -6,7 +6,8 @@ export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER
 
 /** Optional JSON manifest: { "version": "2.1.0", "notes": "..." } */
 export const UPDATE_MANIFEST_URL =
-  process.env.UPDATE_MANIFEST_URL || 'https://raw.githubusercontent.com/usdt-wallet/releases/main/latest.json';
+  process.env.UPDATE_MANIFEST_URL ||
+  'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
   {
