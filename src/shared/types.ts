@@ -12,6 +12,7 @@ export type NetworkId =
   | 'zksync'
   | 'linea'
   | 'scroll'
+  | 'ton'
   | 'solana';
 
 export type FeeTier = 'slow' | 'normal' | 'fast';
@@ -28,6 +29,7 @@ export interface WalletAccount {
   tronAddress: string;
   ethAddress: string;
   solanaAddress?: string;
+  tonAddress?: string;
   createdAt: string;
 }
 
@@ -102,6 +104,7 @@ export interface AppSettings {
   arbiscanApiKey: string;
   basescanApiKey: string;
   snowtraceApiKey: string;
+  toncenterApiKey: string;
   lineascanApiKey: string;
   scrollscanApiKey: string;
   defaultFeeTier: FeeTier;
@@ -125,6 +128,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   arbiscanApiKey: '',
   basescanApiKey: '',
   snowtraceApiKey: '',
+  toncenterApiKey: '',
   lineascanApiKey: '',
   scrollscanApiKey: '',
   defaultFeeTier: 'normal',
@@ -210,6 +214,7 @@ export interface PriceInfo {
   sol: number;
   hnt: number;
   avax: number;
+  ton: number;
   currency: string;
 }
 
@@ -275,6 +280,7 @@ export function isValidEvmAddress(address: string): boolean {
 export function getAccountAddress(account: WalletAccount, network: NetworkId): string {
   if (network === 'tron') return account.tronAddress;
   if (network === 'solana') return account.solanaAddress || '';
+  if (network === 'ton') return account.tonAddress || '';
   return account.ethAddress;
 }
 
@@ -284,7 +290,7 @@ export function getNetworkTokenLabel(network: NetworkId, testnet = false): strin
 
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-export const VAULT_VERSION = 4;
+export const VAULT_VERSION = 5;
 
 // Re-export network helpers
 export {
@@ -296,5 +302,6 @@ export {
   getAssetBalanceFromInfo,
   getTokenSpec,
   isEvmNetwork,
+  isTonNetwork,
 } from './networks';
 export type { NetworkConfig, TokenSpec } from './networks';

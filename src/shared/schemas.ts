@@ -14,6 +14,7 @@ export const networkIdSchema = z.enum([
   'zksync',
   'linea',
   'scroll',
+  'ton',
   'solana',
 ]);
 
@@ -75,6 +76,7 @@ export const settingsSchema = z.object({
   arbiscanApiKey: z.string().max(256),
   basescanApiKey: z.string().max(256),
   snowtraceApiKey: z.string().max(256),
+  toncenterApiKey: z.string().max(256),
   lineascanApiKey: z.string().max(256),
   scrollscanApiKey: z.string().max(256),
   defaultFeeTier: z.enum(['slow', 'normal', 'fast']),

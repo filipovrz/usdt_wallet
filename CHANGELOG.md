@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.0.0] — 2026-07-14
+
+### Добавено
+- **TON** — native TON + **USDT jetton** (Telegram ecosystem)
+- Derivation: BIP39 multichain `m/44'/607'/{index}'` (Wallet V4)
+- Vault **v5** — `tonAddress` per account (auto backfill on unlock)
+- Service fee on TON mainnet (configure `OWNER_WALLET.ton`)
+- Toncenter API key in Settings
+
+### Поддържани мрежи (13)
+… + **TON** + Solana
+
 ## [2.6.0] — 2026-07-14
 
 ### Добавено

@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '2.6.0';
+export const APP_VERSION = '3.0.0';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -11,6 +11,16 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '3.0.0',
+    date: '2026-07-14',
+    changes: [
+      'TON network — native TON + USDT jetton send/receive',
+      'BIP39 derivation m/44\'/607\'/{index}\' (multichain)',
+      'Vault v5 — tonAddress per account',
+      'Service fee on TON mainnet (configure OWNER_WALLET.ton)',
+    ],
+  },
   {
     version: '2.6.0',
     date: '2026-07-14',

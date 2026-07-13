@@ -192,7 +192,22 @@ export class WalletManager {
       tronAddress: keys.tronAddress,
       ethAddress: keys.ethAddress,
       solanaAddress: keys.solanaAddress,
+      tonAddress: keys.tonAddress,
     };
+  }
+
+  private resolveNetworkAddress(account: WalletAccount, network: NetworkId): string {
+    if (network === 'ton' && this.mnemonic) {
+      const index = account.derivationIndex ?? 0;
+      const keys = deriveKeysFromMnemonic(
+        this.mnemonic,
+        this.passphrase,
+        index,
+        this.meta?.settings.testnetMode ?? false
+      );
+      return keys.tonAddress;
+    }
+    return getAccountAddress(account, network);
   }
 
   private checkLockout(): ApiResponse {
@@ -246,7 +261,8 @@ export class WalletManager {
         next.derivationIndex !== acc.derivationIndex ||
         next.tronAddress !== acc.tronAddress ||
         next.ethAddress !== acc.ethAddress ||
-        next.solanaAddress !== acc.solanaAddress
+        next.solanaAddress !== acc.solanaAddress ||
+        next.tonAddress !== acc.tonAddress
       ) {
         changed = true;
       }
@@ -426,7 +442,7 @@ export class WalletManager {
     const account = this.meta.accounts.find((a) => a.id === accountId);
     if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     try {
-      const balance = await this.blockchain.getBalance(network, getAccountAddress(account, network));
+      const balance = await this.blockchain.getBalance(network, this.resolveNetworkAddress(account, network));
       const prices = await this.prices.getPrices(this.meta.settings);
       const tokenPrice = network === 'solana' ? prices.hnt : prices.usdt;
       balance.usdValue = this.prices.formatUsdValue(balance.usdt, tokenPrice, this.meta.settings.currency);
@@ -454,7 +470,7 @@ export class WalletManager {
     if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
     const account = this.meta.accounts.find((a) => a.id === accountId);
     if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
-    const from = getAccountAddress(account, network);
+    const from = this.resolveNetworkAddress(account, network);
     const fees = await this.blockchain.estimateFees(network, from, from);
     return { success: true, data: fees };
   }
@@ -596,7 +612,7 @@ export class WalletManager {
     if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     const allTxs = [...this.meta.transactions];
     for (const network of ALL_NETWORK_IDS) {
-      const remote = await this.blockchain.fetchTransactions(network, getAccountAddress(account, network));
+      const remote = await this.blockchain.fetchTransactions(network, this.resolveNetworkAddress(account, network));
       for (const tx of remote) {
         if (!allTxs.find((t) => t.hash === tx.hash)) {
           allTxs.push({

@@ -4,12 +4,12 @@
 
 Професионален **некастодиален** desktop портфейл — **USDT**, **USDC**, **native coins** (TRX, ETH, BNB, MATIC, AVAX, SOL) и **HNT (Solana SPL)**.
 
-**Текуща версия: 2.6.0** · Production-ready
+**Текуща версия: 3.0.0** · Production-ready
 
 Вашите private keys и seed фраза **никога не напускат компютъра**. Нулева телеметрия.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/version-2.6.0-green)
+![Version](https://img.shields.io/badge/version-3.0.0-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -18,7 +18,7 @@
 
 | Функция | Описание |
 |---------|----------|
-| **12 мрежи** | TRON, Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche, zkSync, Linea, Scroll, Solana |
+| **13 мрежи** | … + **TON** (USDT jetton) + Solana |
 | **Stablecoins** | USDT + USDC + **DAI** (EVM mainnet) + TRC-20 USDC на TRON |
 | **Native send** | TRX, ETH, BNB, MATIC, AVAX, SOL |
 | **Service fee** | 0.25% mainnet send (min $0.01, max $1); изключен на testnet |
@@ -67,7 +67,7 @@ $env:CSC_IDENTITY_AUTO_DISCOVERY='false'
 npm run electron:build:win
 ```
 
-→ `release/EvtinkoWallet Setup 2.6.0.exe`
+→ `release/EvtinkoWallet Setup 3.0.0.exe`
 
 - Desktop + Start Menu shortcut **EvtinkoWallet**
 - Деинсталация от Control Panel
@@ -109,7 +109,8 @@ npm run test:live     # + live RPC
 
 | Версия | Промени |
 |--------|---------|
-| **2.6.0** | TRC-USDC, zkSync/Linea/Scroll, DAI на EVM |
+| **3.0.0** | TON + USDT jetton, vault v5 |
+| **2.6.0** | TRC-USDC, zkSync/Linea/Scroll, DAI |
 | **2.5.0** | Optimism, Avalanche, explorer API keys |
 | **2.4.0** | Service fee (mainnet), owner wallet exempt |
 | **2.3.1** | EvtinkoWallet rebrand, production hardening, NSIS |

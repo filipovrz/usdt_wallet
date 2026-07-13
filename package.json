@@ -1,6 +1,6 @@
 {
   "name": "usdt-wallet",
-  "version": "2.6.0",
+  "version": "3.0.0",
   "description": "EvtinkoWallet — non-custodial multi-chain desktop wallet (USDT, USDC, native coins, Solana)",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",
@@ -26,6 +26,9 @@
     "@scure/bip39": "^1.5.4",
     "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.98.4",
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.3.0",
     "bip39": "^3.1.0",
     "bs58": "^5.0.0",
     "clsx": "^2.1.1",

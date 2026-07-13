@@ -11,6 +11,7 @@ const COINGECKO_IDS: Record<string, string> = {
   sol: 'solana',
   hnt: 'helium',
   avax: 'avalanche-2',
+  ton: 'the-open-network',
 };
 
 export class PriceService {
@@ -41,6 +42,7 @@ export class PriceService {
         sol: data[COINGECKO_IDS.sol]?.[vs] ?? 0,
         hnt: data[COINGECKO_IDS.hnt]?.[vs] ?? 0,
         avax: data[COINGECKO_IDS.avax]?.[vs] ?? 0,
+        ton: data[COINGECKO_IDS.ton]?.[vs] ?? 0,
         currency: settings.currency,
       };
       this.cache = { data: price, ts: Date.now() };
@@ -57,6 +59,7 @@ export class PriceService {
         sol: 0,
         hnt: 0,
         avax: 0,
+        ton: 0,
         currency: settings.currency,
       };
     }

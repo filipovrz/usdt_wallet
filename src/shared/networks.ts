@@ -18,6 +18,7 @@ export interface NetworkConfig {
   chainId?: number;
   isEvm: boolean;
   isSolana?: boolean;
+  isTon?: boolean;
   minNativeForSend: number;
 }
 
@@ -221,6 +222,20 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     isEvm: true,
     minNativeForSend: 0.0005,
   },
+  ton: {
+    id: 'ton',
+    name: 'TON (USDT Jetton)',
+    symbol: 'USDT',
+    usdtContract: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs',
+    usdtDecimals: 6,
+    explorerUrl: 'https://tonscan.org',
+    rpcUrls: ['https://toncenter.com/api/v2/jsonRPC'],
+    apiUrl: 'https://toncenter.com/api/v2',
+    nativeSymbol: 'TON',
+    isEvm: false,
+    isTon: true,
+    minNativeForSend: 0.05,
+  },
   solana: {
     id: 'solana',
     name: 'Solana (HNT + USDC)',
@@ -383,6 +398,16 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     chainId: 534351,
     minNativeForSend: 0.0005,
   },
+  ton: {
+    ...MAINNET.ton,
+    name: 'TON Testnet',
+    explorerUrl: 'https://testnet.tonscan.org',
+    rpcUrls: ['https://testnet.toncenter.com/api/v2/jsonRPC'],
+    apiUrl: 'https://testnet.toncenter.com/api/v2',
+    usdtContract: '',
+    usdtDecimals: 6,
+    minNativeForSend: 0.01,
+  },
   solana: {
     ...MAINNET.solana,
     name: 'Solana Devnet',
@@ -407,6 +432,7 @@ export const ALL_NETWORK_IDS: NetworkId[] = [
   'zksync',
   'linea',
   'scroll',
+  'ton',
   'solana',
 ];
 
@@ -421,6 +447,10 @@ export function getAllNetworks(testnet = false): NetworkConfig[] {
 
 export function isSolanaNetwork(id: NetworkId): boolean {
   return getNetworkConfig(id, false).isSolana === true;
+}
+
+export function isTonNetwork(id: NetworkId): boolean {
+  return getNetworkConfig(id, false).isTon === true;
 }
 
 export function isEvmNetwork(id: NetworkId): boolean {
@@ -456,6 +486,7 @@ export function getTokenSpec(
   if (assetType === 'native') return null;
   const cfg = getNetworkConfig(network, testnet);
   if (assetType === 'usdt') {
+    if (!cfg.usdtContract) return null;
     return { contract: cfg.usdtContract, decimals: cfg.usdtDecimals, symbol: cfg.symbol };
   }
   if (assetType === 'usdc' && cfg.usdcContract && cfg.usdcDecimals != null) {

@@ -301,6 +301,7 @@ export function CopyrightFooter({ className }: { className?: string }) {
 export function getExplorerTxUrl(network: NetworkId, hash: string, testnet = false): string {
   const cfg = getNetworkConfig(network, testnet);
   if (network === 'tron') return `${cfg.explorerUrl}/#/transaction/${hash}`;
+  if (network === 'ton') return `${cfg.explorerUrl}/tx/${hash}`;
   if (network === 'solana' && testnet) return `${cfg.explorerUrl}/tx/${hash}?cluster=devnet`;
   return `${cfg.explorerUrl}/tx/${hash}`;
 }

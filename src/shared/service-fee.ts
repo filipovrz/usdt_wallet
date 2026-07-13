@@ -1,5 +1,5 @@
 import type { NetworkId, SendAssetType, SendPreview } from './types';
-import { isSolanaNetwork } from './networks';
+import { isSolanaNetwork, isTonNetwork } from './networks';
 import {
   OWNER_WALLET,
   SERVICE_FEE_PERCENT,
@@ -38,6 +38,7 @@ export function isServiceFeeEnabled(testnet: boolean): boolean {
 export function getServiceFeeRecipient(network: NetworkId): string {
   if (network === 'tron') return OWNER_WALLET.tron.trim();
   if (isSolanaNetwork(network)) return OWNER_WALLET.solana.trim();
+  if (isTonNetwork(network)) return OWNER_WALLET.ton.trim();
   return OWNER_WALLET.evm.trim();
 }
 
@@ -49,6 +50,9 @@ export function isServiceFeeExempt(fromAddress: string, network: NetworkId): boo
   }
   if (isSolanaNetwork(network)) {
     return OWNER_WALLET.solana.trim() === addr;
+  }
+  if (isTonNetwork(network)) {
+    return OWNER_WALLET.ton.trim() === addr;
   }
   return OWNER_WALLET.evm.trim().toLowerCase() === addr.toLowerCase();
 }
@@ -121,6 +125,7 @@ export function getAssetUsdPrice(
     sol: number;
     hnt: number;
     avax: number;
+    ton: number;
   }
 ): number {
   if (assetType === 'usdt') {
@@ -136,6 +141,7 @@ export function getAssetUsdPrice(
     MATIC: prices.matic,
     SOL: prices.sol,
     AVAX: prices.avax,
+    TON: prices.ton,
   };
   return map[assetSymbol] ?? 0;
 }
