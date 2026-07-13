@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '3.2.0';
+export const APP_VERSION = '3.2.1';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -11,6 +11,18 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '3.2.1',
+    date: '2026-07-14',
+    changes: [
+      'Lightning history from LND + local pay records',
+      'Lightning USD balance on Dashboard',
+      'LND test connection in Settings',
+      'Full i18n for Lightning UI (BG/EN)',
+      'Help sections 1–7 updated for 14 networks',
+      'macOS/Linux build scripts',
+    ],
+  },
   {
     version: '3.2.0',
     date: '2026-07-14',

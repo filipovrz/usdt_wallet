@@ -4,6 +4,7 @@ import type {
   LightningBalance,
   LightningDecodedInvoice,
   LightningInvoiceInfo,
+  RemoteTransaction,
 } from '../../shared/types';
 import { isLightningConfigured, lndRequest } from './lnd-fetch';
 
@@ -26,6 +27,17 @@ function formatBtc(sats: bigint): string {
 
 function satsToBtc(sats: bigint | number | string): string {
   return formatBtc(BigInt(sats));
+}
+
+function hashToHex(value: unknown): string {
+  const raw = String(value ?? '');
+  if (!raw) return '';
+  if (/^[0-9a-f]{64}$/i.test(raw)) return raw.toLowerCase();
+  try {
+    return Buffer.from(raw, 'base64').toString('hex');
+  } catch {
+    return raw;
+  }
 }
 
 export class LightningService {
@@ -151,5 +163,70 @@ export class LightningService {
       hash: String(data.payment_hash ?? decoded.paymentRequest.slice(0, 16)),
       fee: satsToBtc(feeSats),
     };
+  }
+
+  async fetchTransactions(limit = 30): Promise<RemoteTransaction[]> {
+    if (!isLightningConfigured(this.settings)) return [];
+    const out: RemoteTransaction[] = [];
+
+    try {
+      const payments = await lndRequest(
+        this.settings,
+        `/v1/payments?max_payments=${limit}&reversed=true&include_incomplete=false`
+      );
+      for (const p of (payments.payments as Record<string, unknown>[]) || []) {
+        if (String(p.status ?? '') !== 'SUCCEEDED') continue;
+        const msat = p.value_msat != null ? BigInt(String(p.value_msat)) : null;
+        const sats = msat != null ? msat / 1000n : BigInt(String(p.value_sat ?? p.value ?? '0'));
+        const feeMsat = p.fee_msat != null ? BigInt(String(p.fee_msat)) : null;
+        const feeSats = feeMsat != null ? feeMsat / 1000n : BigInt(String(p.fee_sat ?? p.fee ?? '0'));
+        const ts = Number(p.creation_date ?? 0) * 1000;
+        out.push({
+          hash: hashToHex(p.payment_hash) || `ln-out-${ts}`,
+          from: 'lightning',
+          to: 'invoice',
+          amount: satsToBtc(sats),
+          fee: feeSats > 0n ? satsToBtc(feeSats) : undefined,
+          timestamp: ts || Date.now(),
+          direction: 'out',
+          assetSymbol: 'BTC',
+          lightning: true,
+        });
+      }
+    } catch {
+      // LND unavailable or no payments
+    }
+
+    try {
+      const inv = await lndRequest(
+        this.settings,
+        `/v1/invoices?reversed=true&num_max_invoices=${limit}`
+      );
+      for (const i of (inv.invoices as Record<string, unknown>[]) || []) {
+        if (String(i.state ?? '') !== 'SETTLED') continue;
+        const sats = BigInt(String(i.amt_paid_sat ?? i.value ?? '0'));
+        const ts = Number(i.settle_date ?? i.creation_date ?? 0) * 1000;
+        out.push({
+          hash: hashToHex(i.r_hash) || `ln-in-${ts}`,
+          from: 'lightning',
+          to: 'wallet',
+          amount: satsToBtc(sats),
+          timestamp: ts || Date.now(),
+          direction: 'in',
+          assetSymbol: 'BTC',
+          lightning: true,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    out.sort((a, b) => b.timestamp - a.timestamp);
+    const seen = new Set<string>();
+    return out.filter((tx) => {
+      if (seen.has(tx.hash)) return false;
+      seen.add(tx.hash);
+      return true;
+    }).slice(0, limit);
   }
 }

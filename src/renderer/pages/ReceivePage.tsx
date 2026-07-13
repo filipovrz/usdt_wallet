@@ -61,7 +61,7 @@ export function ReceivePage() {
     setLnLoading(false);
     if (res.success && res.data) {
       setLnInvoice(res.data.paymentRequest);
-      notify.success('Lightning invoice created');
+      notify.success(t.lightningInvoiceCreated);
     } else {
       notify.apiError(res.error);
     }
@@ -81,21 +81,26 @@ export function ReceivePage() {
           onChange={setActiveAccount}
         />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
-        {isBtc && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
+        {isBtc && (
+          <BtcLayerTabs
+            value={btcLayer}
+            onChange={setBtcLayer}
+            onchainLabel={t.btcOnchain}
+            lightningLabel={t.btcLightning}
+          />
+        )}
 
         {isLn ? (
           <>
-            {!lnConfigured && (
-              <WarningAlert message="Настрой LND node (URL + macaroon) в Settings." />
-            )}
+            {!lnConfigured && <WarningAlert message={t.lightningNotConfigured} />}
             <Input
-              label="Amount (BTC)"
+              label={t.lightningAmountBtc}
               value={lnAmount}
               onChange={(e) => setLnAmount(e.target.value)}
               placeholder="0.00001"
             />
             <Button onClick={handleCreateInvoice} disabled={lnLoading || !lnConfigured}>
-              {lnLoading ? t.loading : 'Create Lightning invoice'}
+              {lnLoading ? t.loading : t.lightningCreateInvoice}
             </Button>
           </>
         ) : (

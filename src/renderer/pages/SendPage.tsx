@@ -114,7 +114,8 @@ export function SendPage() {
         return;
       }
       if (decoded.data.expired) {
-        setError('Invoice expired');
+        const msg = t.invoiceExpired;
+        setError(msg);
         setLoading(false);
         return;
       }
@@ -203,7 +204,7 @@ export function SendPage() {
     const symbol = resolveSentSymbol(previewData);
 
     if (isLn) {
-      const res = await window.walletApi.payLightningInvoice(to.trim());
+      const res = await window.walletApi.payLightningInvoice(to.trim(), activeAccount.id);
       if (res.success && res.data) {
         setTxHash(res.data.hash);
         setSentSymbol('BTC');
@@ -280,10 +281,15 @@ export function SendPage() {
           onChange={setActiveAccount}
         />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
-        {isBitcoinNetwork(activeNetwork) && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
-        {isLn && !lnConfigured && (
-          <WarningAlert message="Настрой LND node в Settings преди Lightning плащане." />
+        {isBitcoinNetwork(activeNetwork) && (
+          <BtcLayerTabs
+            value={btcLayer}
+            onChange={setBtcLayer}
+            onchainLabel={t.btcOnchain}
+            lightningLabel={t.btcLightning}
+          />
         )}
+        {isLn && !lnConfigured && <WarningAlert message={t.lightningNotConfiguredSend} />}
 
         {settings.offlineMode && <WarningAlert message={notify.t.toast.offlineBlocked} />}
 
@@ -306,7 +312,7 @@ export function SendPage() {
             <p>
               Network fee:{' '}
               {isLn && step === 'confirm'
-                ? 'Lightning routing (varies)'
+                ? t.lightningRoutingFee
                 : `~${preview.fee} ${preview.feeSymbol}`}
             </p>
             {preview.assetType === 'native' && (
@@ -361,7 +367,7 @@ export function SendPage() {
               )}
 
               <Input
-                label={isLn ? 'BOLT11 Invoice (lnbc...)' : t.recipient}
+                label={isLn ? t.lightningBolt11Label : t.recipient}
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
               />

@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.2.1] — 2026-07-14
+
+### Добавено / подобрено
+- **Lightning history** — sync от LND payments/invoices + локален запис при pay
+- **Lightning USD** на Dashboard
+- **Test LND connection** в Settings
+- **i18n** за Lightning UI (BG/EN)
+- Help секции 1–7 актуализирани (14 мрежи, BTC, TON, Lightning)
+- `electron:build:mac` и `electron:build:linux` scripts
+
 ## [3.2.0] — 2026-07-14
 
 ### Добавено

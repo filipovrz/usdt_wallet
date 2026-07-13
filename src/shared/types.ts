@@ -58,6 +58,8 @@ export interface TransactionRecord {
   accountId: string;
   note?: string;
   assetSymbol?: string;
+  /** Lightning payment (off-chain); no blockchain explorer link */
+  lightning?: boolean;
 }
 
 export type MultisigDeployStatus = 'local' | 'pending' | 'deployed' | 'failed';
@@ -177,6 +179,8 @@ export interface RemoteTransaction {
   timestamp: number;
   direction: 'in' | 'out';
   assetSymbol?: string;
+  lightning?: boolean;
+  fee?: string;
 }
 
 export interface BalanceInfo {

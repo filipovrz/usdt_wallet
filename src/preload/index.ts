@@ -123,8 +123,8 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.CREATE_LIGHTNING_INVOICE, { amount, memo }),
   decodeLightningInvoice: (paymentRequest: string): Promise<ApiResponse<LightningDecodedInvoice>> =>
     ipcRenderer.invoke(IPC_CHANNELS.DECODE_LIGHTNING_INVOICE, { paymentRequest }),
-  payLightningInvoice: (paymentRequest: string): Promise<ApiResponse<{ hash: string; fee: string }>> =>
-    ipcRenderer.invoke(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, { paymentRequest }),
+  payLightningInvoice: (paymentRequest: string, accountId: string): Promise<ApiResponse<{ hash: string; fee: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, { paymentRequest, accountId }),
 };
 
 contextBridge.exposeInMainWorld('walletApi', api);

@@ -101,6 +101,7 @@ export function SettingsPage() {
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [updateMsg, setUpdateMsg] = useState('');
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [lndTestMsg, setLndTestMsg] = useState('');
 
   useEffect(() => {
     const next: Record<string, string> = {};
@@ -128,6 +129,28 @@ export function SettingsPage() {
       notify.success(notify.t.toast.apiKeysSaved);
     } else {
       notify.apiError(res.error);
+    }
+  };
+
+  const handleTestLnd = async () => {
+    const save = await window.walletApi.updateSettings(local);
+    if (!save.success) {
+      notify.apiError(save.error);
+      return;
+    }
+    await refreshSession();
+    const res = await window.walletApi.getLightningInfo();
+    if (res.success && res.data?.configured) {
+      const msg = t.lightningTestOk
+        .replace('{alias}', res.data.alias)
+        .replace('{synced}', res.data.synced ? 'yes' : 'no')
+        .replace('{height}', String(res.data.blockHeight));
+      setLndTestMsg(msg);
+      notify.success(msg);
+    } else {
+      const msg = notify.apiError(res.error) || t.lightningTestFail;
+      setLndTestMsg(msg);
+      notify.error(msg);
     }
   };
 
@@ -276,29 +299,30 @@ export function SettingsPage() {
       </Card>
 
       <Card className="max-w-lg space-y-4">
-        <h2 className="font-semibold">Lightning (LND)</h2>
-        <p className="text-xs text-gray-500">
-          Свържи собствен LND node чрез REST API. Lightning не работи без настроен node — портфейлът
-          само изпраща/получава през твоя LND (без вграден node).
-        </p>
+        <h2 className="font-semibold">{t.lightningLndTitle}</h2>
+        <p className="text-xs text-gray-500">{t.lightningLndHelp}</p>
         <Input
-          label="LND REST URL"
+          label={t.lightningRestUrl}
           value={local.lndRestUrl}
           onChange={(e) => setLocal({ ...local, lndRestUrl: e.target.value })}
           placeholder="https://127.0.0.1:8080"
         />
         <Input
-          label="LND Macaroon (hex)"
+          label={t.lightningMacaroon}
           value={local.lndMacaroon}
           onChange={(e) => setLocal({ ...local, lndMacaroon: e.target.value })}
           placeholder="0201036c6e64..."
         />
         <p className="text-xs text-gray-500">
           Macaroon: <code className="text-brand-300">~/.lnd/data/chain/bitcoin/mainnet/admin.macaroon</code>{' '}
-          (hex: <code className="text-brand-300">xxd -ps -c 256 admin.macaroon</code> на Linux/macOS).
-          REST трябва да е включен в lnd.conf (<code className="text-brand-300">restlisten=127.0.0.1:8080</code>).
+          (hex: <code className="text-brand-300">xxd -ps -c 256 admin.macaroon</code>).
+          REST: <code className="text-brand-300">restlisten=127.0.0.1:8080</code> in lnd.conf.
         </p>
-        <Button variant="secondary" onClick={handleSaveApiKeys}>Save Lightning settings</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={handleSaveApiKeys}>{t.lightningSave}</Button>
+          <Button variant="ghost" onClick={handleTestLnd}>{t.lightningTestConnection}</Button>
+        </div>
+        {lndTestMsg && <p className="text-xs text-gray-400">{lndTestMsg}</p>}
       </Card>
 
       <Card className="max-w-lg space-y-4">

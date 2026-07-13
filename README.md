@@ -4,12 +4,12 @@
 
 Професионален **некастодиален** desktop портфейл — **USDT**, **USDC**, **native coins**, **Bitcoin** (on-chain + Lightning), **TON** и **Solana (HNT/SPL)**.
 
-**Текуща версия: 3.2.0** · Production-ready
+**Текуща версия: 3.2.1** · Production-ready
 
 Вашите private keys и seed фраза **никога не напускат компютъра**. Нулева телеметрия.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/version-3.2.0-green)
+![Version](https://img.shields.io/badge/version-3.2.1-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -20,8 +20,8 @@
 |---------|----------|
 | **14 мрежи** | TRON · 10× EVM · Solana · TON · **Bitcoin** |
 | **Stablecoins** | USDT + USDC + **DAI** (EVM mainnet) + TRC-20 USDC на TRON + TON USDT jetton |
-| **Native send** | TRX, ETH, BNB, MATIC, AVAX, SOL, TON, **BTC** |
-| **Bitcoin** | On-chain P2WPKH (`bc1…`, BIP84) + **Lightning** (LND REST) |
+| **Native send** | TRX, ETH, BNB, MATIC, AVAX, SOL, TON, **BTC** (on-chain) |
+| **Lightning** | LND REST: invoice create/pay, history sync, test connection |
 | **Service fee** | 0.25% mainnet send (min $0.01, max $1); изключен на testnet и Lightning |
 | **Solana** | HNT (SPL) + USDC + SOL |
 | **Multi-account** | Уникални адреси per account (vault v6 за BTC) |
@@ -79,10 +79,17 @@ $env:CSC_IDENTITY_AUTO_DISCOVERY='false'
 npm run electron:build:win
 ```
 
-→ `release/EvtinkoWallet Setup 3.2.0.exe`
+→ `release/EvtinkoWallet Setup 3.2.1.exe`
 
 - Desktop + Start Menu shortcut **EvtinkoWallet**
 - Деинсталация от Control Panel
+
+### macOS / Linux
+
+```bash
+npm run electron:build:mac    # macOS (.dmg)
+npm run electron:build:linux  # Linux (AppImage/deb)
+```
 
 ---
 
@@ -123,6 +130,7 @@ npm run test:live     # + live RPC
 
 | Версия | Промени |
 |--------|---------|
+| **3.2.1** | Lightning history, USD balance, LND test, i18n, Help update |
 | **3.2.0** | Bitcoin Lightning (LND REST), On-chain \| Lightning tabs |
 | **3.1.0** | Bitcoin on-chain (BIP84 bc1), vault v6, BTC service fee |
 | **3.0.2** | TON address live fix, session sync |

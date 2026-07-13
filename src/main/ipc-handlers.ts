@@ -229,8 +229,8 @@ export function registerIpcHandlers(wallet: WalletManager): void {
     if (!payload?.paymentRequest) return { success: false, error: 'VALIDATION_ERROR' };
     return wallet.decodeLightningInvoice(payload.paymentRequest);
   });
-  ipcMain.handle(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, async (_e, payload: { paymentRequest: string }) => {
-    if (!payload?.paymentRequest) return { success: false, error: 'VALIDATION_ERROR' };
-    return wallet.payLightningInvoice(payload.paymentRequest);
+  ipcMain.handle(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, async (_e, payload: { paymentRequest: string; accountId: string }) => {
+    if (!payload?.paymentRequest || !payload?.accountId) return { success: false, error: 'VALIDATION_ERROR' };
+    return wallet.payLightningInvoice(payload.paymentRequest, payload.accountId);
   });
 }

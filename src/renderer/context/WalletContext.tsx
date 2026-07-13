@@ -101,10 +101,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const ln = await window.walletApi.getLightningBalance();
       if (ln.success && ln.data) {
         setLightningBalance(ln.data);
+        const prices = await window.walletApi.getPrices();
+        let usdValue: string | undefined;
+        if (prices.success && prices.data) {
+          const btcUsd = prices.data.btc * parseFloat(ln.data.local || '0');
+          usdValue = `${btcUsd.toFixed(2)} ${prices.data.currency}`;
+        }
         setBalance({
           usdt: '0',
           native: ln.data.local,
           nativeSymbol: 'BTC',
+          usdValue,
         });
       }
       return;

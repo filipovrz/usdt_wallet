@@ -96,22 +96,27 @@ export function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 space-y-6">
           <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
-          {isBtc && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
-          {isLn && !lnConfigured && (
-            <WarningAlert message="Lightning: настрой LND REST URL + macaroon в Settings." />
+          {isBtc && (
+            <BtcLayerTabs
+              value={btcLayer}
+              onChange={setBtcLayer}
+              onchainLabel={t.btcOnchain}
+              lightningLabel={t.btcLightning}
+            />
           )}
+          {isLn && !lnConfigured && <WarningAlert message={t.lightningNotConfiguredDashboard} />}
           <div className="rounded-2xl bg-gradient-to-br from-brand-600/20 to-surface-900 p-6 border border-brand-500/20">
             {isBtc ? (
               <>
                 <p className="text-sm text-gray-400">
-                  {isLn ? 'Lightning BTC' : 'BTC'} {t.balance}
+                  {isLn ? t.lightningBtc : 'BTC'} {t.balance}
                 </p>
                 <p className="mt-2 text-4xl font-bold">
                   {settings.hideBalances ? '••••••' : balance?.native ?? '0'} BTC
                 </p>
                 {isLn && lightningBalance && !settings.hideBalances && (
                   <p className="mt-2 text-sm text-gray-500">
-                    Pending: {lightningBalance.pending} BTC
+                    {t.lightningPending}: {lightningBalance.pending} BTC
                   </p>
                 )}
                 {balance?.usdValue && !settings.hideBalances && (
@@ -169,12 +174,12 @@ export function DashboardPage() {
           )}
         </Card>
         <Card className="space-y-4">
-          <h2 className="font-semibold">{isLn ? 'Lightning' : 'Address'}</h2>
-          <Badge>{isLn ? 'Lightning (LND)' : cfg.name}</Badge>
+          <h2 className="font-semibold">{isLn ? t.btcLightning : t.address}</h2>
+          <Badge>{isLn ? t.lightningLndTitle : cfg.name}</Badge>
           {isLn ? (
             <p className="text-sm text-gray-400">
-              За получаване отиди на <strong>Receive</strong> → създай invoice.
-              {lnConfigured ? ' Node е конфигуриран.' : ' Нужен е LND node в Settings.'}
+              {t.receive} → {t.lightningCreateInvoice.toLowerCase()}.
+              {lnConfigured ? t.lightningNodeConfigured : t.lightningNodeNeeded}
             </p>
           ) : (
             <>

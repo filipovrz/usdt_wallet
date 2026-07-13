@@ -140,15 +140,19 @@ export function AccountSelector({
 export function BtcLayerTabs({
   value,
   onChange,
+  onchainLabel = 'On-chain',
+  lightningLabel = 'Lightning',
 }: {
   value: 'onchain' | 'lightning';
   onChange: (v: 'onchain' | 'lightning') => void;
+  onchainLabel?: string;
+  lightningLabel?: string;
 }) {
   return (
     <div className="flex gap-2">
       {[
-        { id: 'onchain' as const, label: 'On-chain' },
-        { id: 'lightning' as const, label: 'Lightning' },
+        { id: 'onchain' as const, label: onchainLabel },
+        { id: 'lightning' as const, label: lightningLabel },
       ].map((tab) => (
         <button
           key={tab.id}

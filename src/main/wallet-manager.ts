@@ -667,20 +667,49 @@ export class WalletManager {
             network,
             direction: tx.direction,
             amount: tx.amount,
+            fee: tx.fee,
             from: tx.from,
             to: tx.to,
             timestamp: tx.timestamp,
             status: 'confirmed',
             accountId,
             assetSymbol: tx.assetSymbol || getNetworkConfig(network, this.meta!.settings.testnetMode).symbol,
+            lightning: tx.lightning,
           });
         }
+      }
+    }
+    if (isLightningConfigured(this.meta.settings)) {
+      try {
+        const lnTxs = await this.lightning.fetchTransactions(40);
+        for (const tx of lnTxs) {
+          if (!allTxs.find((t) => t.hash === tx.hash)) {
+            allTxs.push({
+              id: uuidv4(),
+              hash: tx.hash,
+              network: 'bitcoin',
+              direction: tx.direction,
+              amount: tx.amount,
+              fee: tx.fee,
+              from: tx.from,
+              to: tx.to,
+              timestamp: tx.timestamp,
+              status: 'confirmed',
+              accountId,
+              assetSymbol: 'BTC',
+              lightning: true,
+            });
+          }
+        }
+      } catch {
+        // LND history optional
       }
     }
     allTxs.sort((a, b) => b.timestamp - a.timestamp);
     this.meta.transactions = allTxs.slice(0, 500);
     await this.persistMeta();
-    return { success: true, data: this.meta.transactions };
+    const forAccount = this.meta.transactions.filter((t) => t.accountId === accountId);
+    return { success: true, data: forAccount };
   }
 
   getAddressBook(): ApiResponse<AddressBookEntry[]> {
@@ -936,14 +965,37 @@ export class WalletManager {
     }
   }
 
-  async payLightningInvoice(paymentRequest: string): Promise<ApiResponse<{ hash: string; fee: string }>> {
+  async payLightningInvoice(paymentRequest: string, accountId: string): Promise<ApiResponse<{ hash: string; fee: string }>> {
     if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
     if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
     if (!isLightningConfigured(this.meta.settings)) return { success: false, error: 'LIGHTNING_NOT_CONFIGURED' };
+    const account = this.meta.accounts.find((a) => a.id === accountId);
+    if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     this.touchActivity();
     try {
+      const decoded = await this.lightning.decodeInvoice(paymentRequest);
       const result = await this.lightning.payInvoice(paymentRequest);
-      return { success: true, data: result };
+      const hash = result.hash;
+      if (!this.meta.transactions.find((t) => t.hash === hash)) {
+        this.meta.transactions.unshift({
+          id: uuidv4(),
+          hash,
+          network: 'bitcoin',
+          direction: 'out',
+          amount: decoded.amount,
+          fee: result.fee,
+          from: 'lightning',
+          to: 'invoice',
+          timestamp: Date.now(),
+          status: 'confirmed',
+          accountId,
+          assetSymbol: 'BTC',
+          lightning: true,
+        });
+        this.meta.transactions = this.meta.transactions.slice(0, 500);
+        await this.persistMeta();
+      }
+      return { success: true, data: { ...result, hash } };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'LIGHTNING_PAY_FAILED' };
     }
