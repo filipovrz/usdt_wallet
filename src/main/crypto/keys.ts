@@ -6,6 +6,7 @@ import { TronWeb } from 'tronweb';
 
 import { deriveSolanaAddress } from '../crypto/solana-keys';
 import { deriveTonAddress } from '../crypto/ton-keys';
+import { deriveBitcoinAddress } from '../crypto/bitcoin-keys';
 
 function tronPath(accountIndex: number): string {
   return `m/44'/195'/0'/0/${accountIndex}`;
@@ -52,6 +53,7 @@ export interface DerivedKeys {
   ethAddress: string;
   solanaAddress: string;
   tonAddress: string;
+  bitcoinAddress: string;
   tronPrivateKey: string;
   ethPrivateKey: string;
 }
@@ -79,6 +81,7 @@ export function deriveKeysFromMnemonic(
   const ethWallet = new Wallet('0x' + ethPrivateKey);
   const solanaAddress = deriveSolanaAddress(mnemonic, passphrase, accountIndex);
   const tonAddress = deriveTonAddress(mnemonic, passphrase, accountIndex, testnet);
+  const bitcoinAddress = deriveBitcoinAddress(mnemonic, passphrase, accountIndex, testnet);
 
   seed.fill(0);
 
@@ -87,6 +90,7 @@ export function deriveKeysFromMnemonic(
     ethAddress: getAddress(ethWallet.address),
     solanaAddress,
     tonAddress,
+    bitcoinAddress,
     tronPrivateKey,
     ethPrivateKey,
   };
@@ -116,5 +120,6 @@ export function createAccountFromMnemonic(
     ethAddress: keys.ethAddress,
     solanaAddress: keys.solanaAddress,
     tonAddress: keys.tonAddress,
+    bitcoinAddress: keys.bitcoinAddress,
   };
 }

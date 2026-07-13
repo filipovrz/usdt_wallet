@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.2.0] — 2026-07-14
+
+### Добавено
+- **Bitcoin Lightning** — receive (create invoice) + send (pay BOLT11) via **LND REST API**
+- **On-chain | Lightning** tabs при избрана Bitcoin мрежа
+- **Settings → Lightning (LND):** REST URL + admin macaroon (hex)
+- Help §18 — настройка на LND (BG/EN)
+- Bolt11 validation tests
+
+### Забележки
+- Няма вграден Lightning node — изисква собствен LND
+- Service fee **не** се прилага за Lightning плащания
+
+## [3.1.0] — 2026-07-14
+
+### Добавено
+- **Bitcoin mainnet** — native BTC send/receive (P2WPKH `bc1…`, BIP84)
+- Vault **v6** — `bitcoinAddress` per account
+- Service fee on BTC mainnet (`OWNER_WALLET.bitcoin`)
+- Mempool.space Esplora API (balance, UTXO, fees, broadcast, history)
+- BTC testnet support (Settings → Testnet mode)
+
+## [3.0.2] — 2026-07-14
+
+### Поправено
+- TON address fetched live from main process (fixes blank address panel)
+- Clear stale account state when wallet is locked
+
+## [3.0.1] — 2026-07-14
+
+### Поправено
+- TON address not showing after upgrade (live session sync)
+- Refresh crash on TON network (isSolana guard)
+
 ## [3.0.0] — 2026-07-14
 
 ### Добавено
@@ -9,8 +43,8 @@
 - Service fee on TON mainnet (configure `OWNER_WALLET.ton`)
 - Toncenter API key in Settings
 
-### Поддържани мрежи (13)
-… + **TON** + Solana
+### Поддържани мрежи (14)
+… + **TON** + **Bitcoin** + Solana
 
 ## [2.6.0] — 2026-07-14
 

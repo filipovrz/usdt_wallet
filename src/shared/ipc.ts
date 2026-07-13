@@ -6,6 +6,7 @@ export const IPC_CHANNELS = {
   LOCK: 'wallet:lock',
   GET_MNEMONIC: 'wallet:get-mnemonic',
   GET_BALANCE: 'wallet:get-balance',
+  GET_ACCOUNT_NETWORK_ADDRESS: 'wallet:get-account-network-address',
   SEND_PREVIEW: 'wallet:send-preview',
   SEND: 'wallet:send',
   GET_TRANSACTIONS: 'wallet:get-transactions',
@@ -39,6 +40,11 @@ export const IPC_CHANNELS = {
   GET_HARDWARE_ADDRESS: 'wallet:get-hardware-address',
   DEPLOY_MULTISIG: 'wallet:deploy-multisig',
   FINALIZE_WALLET_SETUP: 'wallet:finalize-setup',
+  GET_LIGHTNING_BALANCE: 'wallet:get-lightning-balance',
+  CREATE_LIGHTNING_INVOICE: 'wallet:create-lightning-invoice',
+  DECODE_LIGHTNING_INVOICE: 'wallet:decode-lightning-invoice',
+  PAY_LIGHTNING_INVOICE: 'wallet:pay-lightning-invoice',
+  GET_LIGHTNING_INFO: 'wallet:get-lightning-info',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

@@ -137,6 +137,37 @@ export function AccountSelector({
   );
 }
 
+export function BtcLayerTabs({
+  value,
+  onChange,
+}: {
+  value: 'onchain' | 'lightning';
+  onChange: (v: 'onchain' | 'lightning') => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      {[
+        { id: 'onchain' as const, label: 'On-chain' },
+        { id: 'lightning' as const, label: 'Lightning' },
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={clsx(
+            'rounded-xl border px-4 py-2 text-sm font-medium transition',
+            value === tab.id
+              ? 'border-brand-500 bg-brand-500/10 text-brand-300'
+              : 'border-surface-600 bg-surface-800 text-gray-400 hover:border-surface-500'
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function NetworkSelector({
   value,
   onChange,
@@ -302,6 +333,7 @@ export function getExplorerTxUrl(network: NetworkId, hash: string, testnet = fal
   const cfg = getNetworkConfig(network, testnet);
   if (network === 'tron') return `${cfg.explorerUrl}/#/transaction/${hash}`;
   if (network === 'ton') return `${cfg.explorerUrl}/tx/${hash}`;
+  if (network === 'bitcoin') return `${cfg.explorerUrl}/tx/${hash}`;
   if (network === 'solana' && testnet) return `${cfg.explorerUrl}/tx/${hash}?cluster=devnet`;
   return `${cfg.explorerUrl}/tx/${hash}`;
 }

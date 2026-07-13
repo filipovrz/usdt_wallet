@@ -1,11 +1,12 @@
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Button, Card, Badge, NetworkSelector, AccountSelector, LoadingSpinner, WarningAlert } from '../components/ui';
+import { Button, Card, Badge, NetworkSelector, AccountSelector, LoadingSpinner, WarningAlert, BtcLayerTabs } from '../components/ui';
 import { getNetworkConfig } from '@shared/networks';
-import { getAccountAddress, getNetworkTokenLabel, networkHasUsdc, networkHasDai } from '@shared/types';
+import { getNetworkTokenLabel, networkHasUsdc, networkHasDai, isBitcoinNetwork } from '@shared/types';
 import type { TronResources } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
+import { useNetworkAddress } from '../hooks/useNetworkAddress';
 
 export function DashboardPage() {
   const {
@@ -18,9 +19,13 @@ export function DashboardPage() {
     session,
     setActiveAccount,
     t,
+    btcLayer,
+    setBtcLayer,
+    lightningBalance,
   } = useWallet();
   const notify = useNotify();
   const [tronResources, setTronResources] = useState<TronResources | null>(null);
+  const address = useNetworkAddress(activeAccount, activeNetwork, session.unlocked);
 
   useEffect(() => {
     if (activeAccount && activeNetwork === 'tron' && !settings.offlineMode) {
@@ -36,6 +41,11 @@ export function DashboardPage() {
       return;
     }
     if (!activeAccount) return;
+    if (isBitcoinNetwork(activeNetwork) && btcLayer === 'lightning') {
+      await refreshBalance();
+      notify.success(notify.t.toast.balanceRefreshed);
+      return;
+    }
     const res = await window.walletApi.getBalance(activeAccount.id, activeNetwork);
     if (res.success) {
       await refreshBalance();
@@ -46,19 +56,20 @@ export function DashboardPage() {
   };
 
   const handleCopy = async () => {
-    if (!activeAccount) return;
-    const address = getAccountAddress(activeAccount, activeNetwork);
+    if (!address) return;
     await navigator.clipboard.writeText(address);
     notify.success(notify.t.toast.copied);
   };
 
   if (!activeAccount) return <LoadingSpinner />;
 
-  const address = getAccountAddress(activeAccount, activeNetwork);
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
   const tokenLabel = getNetworkTokenLabel(activeNetwork, settings.testnetMode);
   const showUsdc = networkHasUsdc(activeNetwork, settings.testnetMode);
   const showDai = networkHasDai(activeNetwork, settings.testnetMode);
+  const isBtc = isBitcoinNetwork(activeNetwork);
+  const lnConfigured = !!(settings.lndRestUrl.trim() && settings.lndMacaroon.trim());
+  const isLn = isBtc && btcLayer === 'lightning';
 
   return (
     <div className="p-8 space-y-6">
@@ -85,39 +96,64 @@ export function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 space-y-6">
           <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
+          {isBtc && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
+          {isLn && !lnConfigured && (
+            <WarningAlert message="Lightning: настрой LND REST URL + macaroon в Settings." />
+          )}
           <div className="rounded-2xl bg-gradient-to-br from-brand-600/20 to-surface-900 p-6 border border-brand-500/20">
-            <p className="text-sm text-gray-400">{tokenLabel} {t.balance}</p>
-            <p className="mt-2 text-4xl font-bold">
-              {settings.hideBalances ? '••••••' : balance?.usdt ?? '0'} {tokenLabel}
-            </p>
-            {balance?.usdValue && !settings.hideBalances && (
-              <p className="mt-1 text-sm text-gray-500">≈ {balance.usdValue}</p>
-            )}
-            {showUsdc && (
+            {isBtc ? (
               <>
-                <p className="mt-4 text-sm text-gray-400">USDC {t.balance}</p>
-                <p className="mt-1 text-2xl font-bold">
-                  {settings.hideBalances ? '••••••' : balance?.usdc ?? '0'} USDC
+                <p className="text-sm text-gray-400">
+                  {isLn ? 'Lightning BTC' : 'BTC'} {t.balance}
                 </p>
-                {balance?.usdcUsdValue && !settings.hideBalances && (
-                  <p className="mt-1 text-sm text-gray-500">≈ {balance.usdcUsdValue}</p>
+                <p className="mt-2 text-4xl font-bold">
+                  {settings.hideBalances ? '••••••' : balance?.native ?? '0'} BTC
+                </p>
+                {isLn && lightningBalance && !settings.hideBalances && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Pending: {lightningBalance.pending} BTC
+                  </p>
+                )}
+                {balance?.usdValue && !settings.hideBalances && (
+                  <p className="mt-1 text-sm text-gray-500">≈ {balance.usdValue}</p>
                 )}
               </>
-            )}
-            {showDai && (
+            ) : (
               <>
-                <p className="mt-4 text-sm text-gray-400">DAI {t.balance}</p>
-                <p className="mt-1 text-2xl font-bold">
-                  {settings.hideBalances ? '••••••' : balance?.dai ?? '0'} DAI
+                <p className="text-sm text-gray-400">{tokenLabel} {t.balance}</p>
+                <p className="mt-2 text-4xl font-bold">
+                  {settings.hideBalances ? '••••••' : balance?.usdt ?? '0'} {tokenLabel}
                 </p>
-                {balance?.daiUsdValue && !settings.hideBalances && (
-                  <p className="mt-1 text-sm text-gray-500">≈ {balance.daiUsdValue}</p>
+                {balance?.usdValue && !settings.hideBalances && (
+                  <p className="mt-1 text-sm text-gray-500">≈ {balance.usdValue}</p>
                 )}
+                {showUsdc && (
+                  <>
+                    <p className="mt-4 text-sm text-gray-400">USDC {t.balance}</p>
+                    <p className="mt-1 text-2xl font-bold">
+                      {settings.hideBalances ? '••••••' : balance?.usdc ?? '0'} USDC
+                    </p>
+                    {balance?.usdcUsdValue && !settings.hideBalances && (
+                      <p className="mt-1 text-sm text-gray-500">≈ {balance.usdcUsdValue}</p>
+                    )}
+                  </>
+                )}
+                {showDai && (
+                  <>
+                    <p className="mt-4 text-sm text-gray-400">DAI {t.balance}</p>
+                    <p className="mt-1 text-2xl font-bold">
+                      {settings.hideBalances ? '••••••' : balance?.dai ?? '0'} DAI
+                    </p>
+                    {balance?.daiUsdValue && !settings.hideBalances && (
+                      <p className="mt-1 text-sm text-gray-500">≈ {balance.daiUsdValue}</p>
+                    )}
+                  </>
+                )}
+                <p className="mt-4 text-sm text-gray-500">
+                  Native: {settings.hideBalances ? '••••' : `${balance?.native ?? '0'} ${cfg.nativeSymbol}`}
+                </p>
               </>
             )}
-            <p className="mt-4 text-sm text-gray-500">
-              Native: {settings.hideBalances ? '••••' : `${balance?.native ?? '0'} ${cfg.nativeSymbol}`}
-            </p>
           </div>
           {activeNetwork === 'tron' && tronResources && (
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -133,10 +169,19 @@ export function DashboardPage() {
           )}
         </Card>
         <Card className="space-y-4">
-          <h2 className="font-semibold">Address</h2>
-          <Badge>{cfg.name}</Badge>
-          <p className="break-all font-mono text-xs text-gray-400">{address}</p>
-          <Button variant="ghost" onClick={handleCopy}>Copy</Button>
+          <h2 className="font-semibold">{isLn ? 'Lightning' : 'Address'}</h2>
+          <Badge>{isLn ? 'Lightning (LND)' : cfg.name}</Badge>
+          {isLn ? (
+            <p className="text-sm text-gray-400">
+              За получаване отиди на <strong>Receive</strong> → създай invoice.
+              {lnConfigured ? ' Node е конфигуриран.' : ' Нужен е LND node в Settings.'}
+            </p>
+          ) : (
+            <>
+              <p className="break-all font-mono text-xs text-gray-400">{address}</p>
+              <Button variant="ghost" onClick={handleCopy}>Copy</Button>
+            </>
+          )}
         </Card>
       </div>
     </div>

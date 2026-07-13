@@ -13,6 +13,7 @@ export type NetworkId =
   | 'linea'
   | 'scroll'
   | 'ton'
+  | 'bitcoin'
   | 'solana';
 
 export type FeeTier = 'slow' | 'normal' | 'fast';
@@ -30,6 +31,7 @@ export interface WalletAccount {
   ethAddress: string;
   solanaAddress?: string;
   tonAddress?: string;
+  bitcoinAddress?: string;
   createdAt: string;
 }
 
@@ -109,6 +111,36 @@ export interface AppSettings {
   scrollscanApiKey: string;
   defaultFeeTier: FeeTier;
   checkUpdatesOnStart: boolean;
+  /** LND REST URL (e.g. https://127.0.0.1:8080) for Lightning */
+  lndRestUrl: string;
+  /** Hex-encoded LND admin macaroon */
+  lndMacaroon: string;
+}
+
+export type BtcLayer = 'onchain' | 'lightning';
+
+export interface LightningBalance {
+  local: string;
+  pending: string;
+  total: string;
+}
+
+export interface LightningInvoiceInfo {
+  paymentRequest: string;
+  amount: string;
+  description?: string;
+  expiry: number;
+  expiresAt: number;
+}
+
+export interface LightningDecodedInvoice {
+  paymentRequest: string;
+  amount: string;
+  description?: string;
+  destination: string;
+  expiry: number;
+  expiresAt: number;
+  expired: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -133,6 +165,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   scrollscanApiKey: '',
   defaultFeeTier: 'normal',
   checkUpdatesOnStart: true,
+  lndRestUrl: '',
+  lndMacaroon: '',
 };
 
 export interface RemoteTransaction {
@@ -215,6 +249,7 @@ export interface PriceInfo {
   hnt: number;
   avax: number;
   ton: number;
+  btc: number;
   currency: string;
 }
 
@@ -281,6 +316,7 @@ export function getAccountAddress(account: WalletAccount, network: NetworkId): s
   if (network === 'tron') return account.tronAddress;
   if (network === 'solana') return account.solanaAddress || '';
   if (network === 'ton') return account.tonAddress || '';
+  if (network === 'bitcoin') return account.bitcoinAddress || '';
   return account.ethAddress;
 }
 
@@ -290,7 +326,7 @@ export function getNetworkTokenLabel(network: NetworkId, testnet = false): strin
 
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-export const VAULT_VERSION = 5;
+export const VAULT_VERSION = 6;
 
 // Re-export network helpers
 export {
@@ -303,5 +339,6 @@ export {
   getTokenSpec,
   isEvmNetwork,
   isTonNetwork,
+  isBitcoinNetwork,
 } from './networks';
 export type { NetworkConfig, TokenSpec } from './networks';

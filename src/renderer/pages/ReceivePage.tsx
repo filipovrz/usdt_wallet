@@ -1,25 +1,71 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Card, NetworkSelector, AccountSelector, CopyButton, LoadingSpinner, ErrorAlert } from '../components/ui';
-import { getAccountAddress, isEvmNetwork, isValidEvmAddress } from '@shared/types';
+import {
+  Card,
+  NetworkSelector,
+  AccountSelector,
+  CopyButton,
+  LoadingSpinner,
+  ErrorAlert,
+  BtcLayerTabs,
+  Button,
+  Input,
+  WarningAlert,
+} from '../components/ui';
+import { isEvmNetwork, isValidEvmAddress, isBitcoinNetwork } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
+import { useNetworkAddress } from '../hooks/useNetworkAddress';
 
 export function ReceivePage() {
-  const { activeAccount, activeNetwork, setActiveNetwork, settings, session, setActiveAccount, t } = useWallet();
+  const {
+    activeAccount,
+    activeNetwork,
+    setActiveNetwork,
+    settings,
+    session,
+    setActiveAccount,
+    t,
+    btcLayer,
+    setBtcLayer,
+  } = useWallet();
   const notify = useNotify();
   const [qrDataUrl, setQrDataUrl] = useState('');
-  const address = activeAccount ? getAccountAddress(activeAccount, activeNetwork) : '';
+  const [lnAmount, setLnAmount] = useState('');
+  const [lnInvoice, setLnInvoice] = useState('');
+  const [lnLoading, setLnLoading] = useState(false);
+  const address = useNetworkAddress(activeAccount, activeNetwork, session.unlocked);
+
+  const isBtc = isBitcoinNetwork(activeNetwork);
+  const isLn = isBtc && btcLayer === 'lightning';
+  const lnConfigured = !!(settings.lndRestUrl.trim() && settings.lndMacaroon.trim());
+  const displayText = isLn ? lnInvoice : address;
 
   useEffect(() => {
-    if (!address) return;
-    window.walletApi.generateQR(address).then((res) => {
+    if (!displayText) {
+      setQrDataUrl('');
+      return;
+    }
+    window.walletApi.generateQR(displayText).then((res) => {
       if (res.success && res.data) {
         setQrDataUrl(res.data.dataUrl);
       } else if (res.error) {
         notify.apiError(res.error);
       }
     });
-  }, [address]);
+  }, [displayText]);
+
+  const handleCreateInvoice = async () => {
+    if (!lnAmount.trim()) return;
+    setLnLoading(true);
+    const res = await window.walletApi.createLightningInvoice(lnAmount.trim());
+    setLnLoading(false);
+    if (res.success && res.data) {
+      setLnInvoice(res.data.paymentRequest);
+      notify.success('Lightning invoice created');
+    } else {
+      notify.apiError(res.error);
+    }
+  };
 
   if (!activeAccount) return <LoadingSpinner />;
 
@@ -35,24 +81,48 @@ export function ReceivePage() {
           onChange={setActiveAccount}
         />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
-        {evmInvalid && (
-          <ErrorAlert message="Невалиден Ethereum адрес — заключете и отключете портфейла отново." />
+        {isBtc && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
+
+        {isLn ? (
+          <>
+            {!lnConfigured && (
+              <WarningAlert message="Настрой LND node (URL + macaroon) в Settings." />
+            )}
+            <Input
+              label="Amount (BTC)"
+              value={lnAmount}
+              onChange={(e) => setLnAmount(e.target.value)}
+              placeholder="0.00001"
+            />
+            <Button onClick={handleCreateInvoice} disabled={lnLoading || !lnConfigured}>
+              {lnLoading ? t.loading : 'Create Lightning invoice'}
+            </Button>
+          </>
+        ) : (
+          evmInvalid && (
+            <ErrorAlert message="Невалиден Ethereum адрес — заключете и отключете портфейла отново." />
+          )
         )}
-        {qrDataUrl && !evmInvalid && (
+
+        {qrDataUrl && !evmInvalid && displayText && (
           <div className="mx-auto w-fit rounded-2xl bg-white p-4">
             <img src={qrDataUrl} alt="QR" className="h-[280px] w-[280px]" />
           </div>
         )}
-        <p className="select-all break-all font-mono text-sm text-brand-300">{address}</p>
+        {displayText && (
+          <p className="select-all break-all font-mono text-sm text-brand-300">{displayText}</p>
+        )}
         {isEvmNetwork(activeNetwork) && address && (
           <p className="text-xs text-gray-500">{address.length} / 42 символа</p>
         )}
-        <CopyButton
-          text={address}
-          label={t.copy}
-          copiedLabel={t.copied}
-          onCopied={() => notify.success(notify.t.toast.copied)}
-        />
+        {displayText && (
+          <CopyButton
+            text={displayText}
+            label={t.copy}
+            copiedLabel={t.copied}
+            onCopied={() => notify.success(notify.t.toast.copied)}
+          />
+        )}
       </Card>
     </div>
   );

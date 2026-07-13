@@ -276,6 +276,32 @@ export function SettingsPage() {
       </Card>
 
       <Card className="max-w-lg space-y-4">
+        <h2 className="font-semibold">Lightning (LND)</h2>
+        <p className="text-xs text-gray-500">
+          Свържи собствен LND node чрез REST API. Lightning не работи без настроен node — портфейлът
+          само изпраща/получава през твоя LND (без вграден node).
+        </p>
+        <Input
+          label="LND REST URL"
+          value={local.lndRestUrl}
+          onChange={(e) => setLocal({ ...local, lndRestUrl: e.target.value })}
+          placeholder="https://127.0.0.1:8080"
+        />
+        <Input
+          label="LND Macaroon (hex)"
+          value={local.lndMacaroon}
+          onChange={(e) => setLocal({ ...local, lndMacaroon: e.target.value })}
+          placeholder="0201036c6e64..."
+        />
+        <p className="text-xs text-gray-500">
+          Macaroon: <code className="text-brand-300">~/.lnd/data/chain/bitcoin/mainnet/admin.macaroon</code>{' '}
+          (hex: <code className="text-brand-300">xxd -ps -c 256 admin.macaroon</code> на Linux/macOS).
+          REST трябва да е включен в lnd.conf (<code className="text-brand-300">restlisten=127.0.0.1:8080</code>).
+        </p>
+        <Button variant="secondary" onClick={handleSaveApiKeys}>Save Lightning settings</Button>
+      </Card>
+
+      <Card className="max-w-lg space-y-4">
         <h2 className="font-semibold">Accounts ({session.accounts.length})</h2>
         <ul className="space-y-3 text-sm">
           {session.accounts.map((acc) => (
@@ -322,6 +348,11 @@ export function SettingsPage() {
               {acc.tonAddress && (
                 <p className="mt-1 break-all font-mono text-xs text-gray-500">
                   <span className="text-gray-400">TON:</span> {acc.tonAddress}
+                </p>
+              )}
+              {acc.bitcoinAddress && (
+                <p className="mt-1 break-all font-mono text-xs text-gray-500">
+                  <span className="text-gray-400">BTC:</span> {acc.bitcoinAddress}
                 </p>
               )}
             </li>

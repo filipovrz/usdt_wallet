@@ -13,10 +13,12 @@ import {
   WarningAlert,
   SendAssetSelector,
   getExplorerTxUrl,
+  BtcLayerTabs,
 } from '../components/ui';
 import type { SendPreview, AddressBookEntry, FeeTier, SendAssetType, NetworkId } from '@shared/types';
-import { getNetworkConfig, isSolanaNetwork, networkHasUsdc, networkHasDai } from '@shared/networks';
-import { getAccountAddress, isEvmNetwork } from '@shared/types';
+import { getNetworkConfig, isSolanaNetwork, isBitcoinNetwork, networkHasUsdc, networkHasDai } from '@shared/networks';
+import { isEvmNetwork } from '@shared/types';
+import { useNetworkAddress } from '../hooks/useNetworkAddress';
 import { useNotify } from '../hooks/useNotify';
 import { formatApiError } from '../i18n/api-messages';
 
@@ -30,8 +32,9 @@ function isSameRecipient(ownAddress: string, to: string, network: NetworkId): bo
 }
 
 export function SendPage() {
-  const { activeAccount, activeNetwork, setActiveNetwork, settings, session, setActiveAccount, t } = useWallet();
+  const { activeAccount, activeNetwork, setActiveNetwork, settings, session, setActiveAccount, t, btcLayer, setBtcLayer } = useWallet();
   const notify = useNotify();
+  const ownAddress = useNetworkAddress(activeAccount, activeNetwork, session.unlocked);
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
   const nativeSymbol = cfg.nativeSymbol;
   const tokenSymbol = cfg.symbol;
@@ -61,9 +64,13 @@ export function SendPage() {
   useEffect(() => {
     if (assetType === 'usdc' && !hasUsdc) setAssetType('usdt');
     if (assetType === 'dai' && !hasDai) setAssetType('usdt');
+    if (isBitcoinNetwork(activeNetwork)) setAssetType('native');
   }, [activeNetwork, hasUsdc, hasDai, assetType]);
 
   if (!activeAccount) return <LoadingSpinner />;
+
+  const isLn = isBitcoinNetwork(activeNetwork) && btcLayer === 'lightning';
+  const lnConfigured = !!(settings.lndRestUrl.trim() && settings.lndMacaroon.trim());
 
   const amountLabel =
     assetType === 'native'
@@ -97,7 +104,44 @@ export function SendPage() {
     setError('');
     setWarning('');
 
-    const ownAddress = getAccountAddress(activeAccount, activeNetwork);
+    if (isLn) {
+      const decoded = await window.walletApi.decodeLightningInvoice(to.trim());
+      if (!decoded.success || !decoded.data) {
+        const msg = notify.apiError(decoded.error);
+        setError(msg);
+        notify.error(msg);
+        setLoading(false);
+        return;
+      }
+      if (decoded.data.expired) {
+        setError('Invoice expired');
+        setLoading(false);
+        return;
+      }
+      const lnPreview: SendPreview = {
+        to: decoded.data.paymentRequest,
+        amount: decoded.data.amount,
+        fee: '0',
+        feeSymbol: 'BTC',
+        totalUsdt: decoded.data.amount,
+        network: 'bitcoin',
+        assetType: 'native',
+        assetSymbol: 'BTC',
+        assetBalance: '0',
+        hasEnoughAsset: true,
+        nativeBalance: '0',
+        minNativeRequired: decoded.data.amount,
+        hasEnoughNative: true,
+      };
+      setPreview(lnPreview);
+      setAmount(decoded.data.amount);
+      notify.info(notify.t.toast.sendPreviewReady);
+      if (settings.confirmBeforeSend) setStep('confirm');
+      else await handleSend(lnPreview);
+      setLoading(false);
+      return;
+    }
+
     if (isSameRecipient(ownAddress, to, activeNetwork)) {
       const msg = notify.t.errors.SAME_ACCOUNT;
       setError(msg);
@@ -157,6 +201,22 @@ export function SendPage() {
     setLoading(true);
     setError('');
     const symbol = resolveSentSymbol(previewData);
+
+    if (isLn) {
+      const res = await window.walletApi.payLightningInvoice(to.trim());
+      if (res.success && res.data) {
+        setTxHash(res.data.hash);
+        setSentSymbol('BTC');
+        setStep('done');
+        notify.success(formatSendSuccess('BTC'));
+      } else {
+        const msg = notify.apiError(res.error);
+        setError(msg);
+      }
+      setLoading(false);
+      return;
+    }
+
     const res = await window.walletApi.send({
       accountId: activeAccount.id,
       network: activeNetwork,
@@ -220,6 +280,10 @@ export function SendPage() {
           onChange={setActiveAccount}
         />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
+        {isBitcoinNetwork(activeNetwork) && <BtcLayerTabs value={btcLayer} onChange={setBtcLayer} />}
+        {isLn && !lnConfigured && (
+          <WarningAlert message="Настрой LND node в Settings преди Lightning плащане." />
+        )}
 
         {settings.offlineMode && <WarningAlert message={notify.t.toast.offlineBlocked} />}
 
@@ -240,7 +304,10 @@ export function SendPage() {
               </p>
             ) : null}
             <p>
-              Network fee: ~{preview.fee} {preview.feeSymbol}
+              Network fee:{' '}
+              {isLn && step === 'confirm'
+                ? 'Lightning routing (varies)'
+                : `~${preview.fee} ${preview.feeSymbol}`}
             </p>
             {preview.assetType === 'native' && (
               <p className="text-gray-400">
@@ -276,24 +343,30 @@ export function SendPage() {
         >
           {step === 'form' && (
             <>
-              <div className="space-y-2">
-                <span className="text-sm text-gray-400">{t.sendAsset}</span>
-                <SendAssetSelector
-                  value={assetType}
-                  onChange={setAssetType}
-                  usdtLabel={tokenSymbol}
-                  usdcLabel={hasUsdc ? 'USDC' : undefined}
-                  daiLabel={hasDai ? 'DAI' : undefined}
-                  nativeLabel={nativeSymbol}
-                />
-                {assetType === 'native' && (
-                  <p className="text-xs text-gray-500">{t.nativeSendNote}</p>
-                )}
-              </div>
+              {!isBitcoinNetwork(activeNetwork) && (
+                <div className="space-y-2">
+                  <span className="text-sm text-gray-400">{t.sendAsset}</span>
+                  <SendAssetSelector
+                    value={assetType}
+                    onChange={setAssetType}
+                    usdtLabel={tokenSymbol}
+                    usdcLabel={hasUsdc ? 'USDC' : undefined}
+                    daiLabel={hasDai ? 'DAI' : undefined}
+                    nativeLabel={nativeSymbol}
+                  />
+                  {assetType === 'native' && (
+                    <p className="text-xs text-gray-500">{t.nativeSendNote}</p>
+                  )}
+                </div>
+              )}
 
-              <Input label={t.recipient} value={to} onChange={(e) => setTo(e.target.value)} />
+              <Input
+                label={isLn ? 'BOLT11 Invoice (lnbc...)' : t.recipient}
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
 
-              {contacts.length > 0 && (
+              {!isLn && (
                 <select
                   className="w-full rounded-xl border border-surface-600 bg-surface-800 px-4 py-2 text-sm"
                   onChange={(e) => setTo(e.target.value)}
@@ -310,12 +383,18 @@ export function SendPage() {
                 </select>
               )}
 
-              <Input label={amountLabel} value={amount} onChange={(e) => setAmount(e.target.value)} />
+              {!isLn && (
+                <Input label={amountLabel} value={amount} onChange={(e) => setAmount(e.target.value)} />
+              )}
 
-              {!isSolanaNetwork(activeNetwork) && (
+              {!isSolanaNetwork(activeNetwork) && !isLn && (
                 <div className="space-y-2">
                   <span className="text-sm text-gray-400">
-                    {activeNetwork === 'tron' && assetType !== 'native' ? 'Fee priority' : 'Gas speed'}
+                    {activeNetwork === 'tron' && assetType !== 'native'
+                      ? 'Fee priority'
+                      : isBitcoinNetwork(activeNetwork)
+                        ? 'Fee rate (sat/vB)'
+                        : 'Gas speed'}
                   </span>
                   <FeeTierSelector value={feeTier} onChange={setFeeTier} />
                 </div>
@@ -323,7 +402,9 @@ export function SendPage() {
             </>
           )}
 
-          <Input label={t.password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {!isLn && (
+            <Input label={t.password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          )}
           {warning && <WarningAlert message={warning} />}
           {error && <ErrorAlert message={error} />}
           <Button type="submit" className="w-full" disabled={loading || settings.offlineMode}>

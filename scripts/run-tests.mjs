@@ -113,11 +113,14 @@ async function runTests() {
     assert(keys1.ethAddress === keys2.ethAddress, 'eth address not deterministic');
     assert(keys1.solanaAddress === keys2.solanaAddress, 'solana address not deterministic');
     assert(keys1.tonAddress === keys2.tonAddress, 'ton address not deterministic');
+    assert(keys1.bitcoinAddress === keys2.bitcoinAddress, 'bitcoin address not deterministic');
     assert(keys1.tronAddress.startsWith('T'), `tron address format: ${keys1.tronAddress}`);
     assert(keys1.ethAddress.startsWith('0x'), `eth address format: ${keys1.ethAddress}`);
     assert(keys1.ethAddress.length === 42, `eth address length: ${keys1.ethAddress.length}`);
     assert(keys1.solanaAddress.length >= 32, `solana address format: ${keys1.solanaAddress}`);
     assert(keys1.tonAddress.length >= 40, `ton address format: ${keys1.tonAddress}`);
+    assert(keys1.bitcoinAddress.startsWith('bc1'), `bitcoin address format: ${keys1.bitcoinAddress}`);
+    assert(keys1.bitcoinAddress === 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu', 'bip84 test vector mismatch');
 
     const acc0 = deriveKeysFromMnemonic(TEST_MNEMONIC, '', 0);
     const acc1 = deriveKeysFromMnemonic(TEST_MNEMONIC, '', 1);
@@ -125,7 +128,8 @@ async function runTests() {
     assert(acc0.tronAddress !== acc1.tronAddress, 'multi-account tron addresses must differ');
     assert(acc0.solanaAddress !== acc1.solanaAddress, 'multi-account solana addresses must differ');
     assert(acc0.tonAddress !== acc1.tonAddress, 'multi-account ton addresses must differ');
-    ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…, TON: ${keys1.tonAddress.slice(0, 8)}…)`);
+    assert(acc0.bitcoinAddress !== acc1.bitcoinAddress, 'multi-account bitcoin addresses must differ');
+    ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…, BTC: ${keys1.bitcoinAddress.slice(0, 8)}…)`);
   } catch (e) {
     fail('Mnemonic & key derivation', e);
   }
@@ -144,9 +148,11 @@ async function runTests() {
     assert(bc.validateAddress('ethereum', keys.ethAddress), 'derived eth address invalid');
     assert(bc.validateAddress('solana', keys.solanaAddress), 'valid solana rejected');
     assert(bc.validateAddress('ton', keys.tonAddress), 'valid ton rejected');
+    assert(bc.validateAddress('bitcoin', keys.bitcoinAddress), 'valid bitcoin rejected');
+    assert(!bc.validateAddress('bitcoin', keys.tronAddress), 'tron addr on bitcoin accepted');
     assert(!bc.validateAddress('ton', 'not-a-valid-ton-address'), 'invalid ton accepted');
     assert(!bc.validateAddress('solana', keys.tronAddress), 'tron addr on solana accepted');
-    ok('Address validation (TRON + EVM + Solana + TON)');
+    ok('Address validation (TRON + EVM + Solana + TON + Bitcoin)');
   } catch (e) {
     fail('Address validation', e);
   }
@@ -205,6 +211,30 @@ async function runTests() {
     ok('Multisig policy schema');
   } catch (e) {
     fail('Multisig schema', e);
+  }
+
+  // Lightning bolt11
+  try {
+    const bolt11 = require('bolt11');
+    const crypto = require('crypto');
+    const { LightningService } = require(path.join(root, 'dist-electron/main/services/lightning-service.js'));
+    const ls = new LightningService(DEFAULT_SETTINGS);
+    assert(!ls.isConfigured(), 'lightning should be unconfigured by default');
+    assert(!ls.validateInvoice('not-an-invoice'), 'garbage invoice accepted');
+    const privateKey = Buffer.alloc(32, 1);
+    let encoded = bolt11.encode({
+      privateKey,
+      satoshis: 10000,
+      timestamp: 1_700_000_000,
+      tags: [{ tagName: 'payment_hash', data: crypto.randomBytes(32) }],
+    });
+    encoded = bolt11.sign(encoded, privateKey);
+    const paymentRequest = encoded.paymentRequest;
+    assert(ls.validateInvoice(paymentRequest), 'valid bolt11 rejected');
+    assert(DEFAULT_SETTINGS.lndRestUrl === '', 'default lndRestUrl should be empty');
+    ok('Lightning bolt11 validation + LND settings defaults');
+  } catch (e) {
+    fail('Lightning bolt11', e);
   }
 
   // Semver helper

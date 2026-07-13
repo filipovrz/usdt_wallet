@@ -19,6 +19,7 @@ export interface NetworkConfig {
   isEvm: boolean;
   isSolana?: boolean;
   isTon?: boolean;
+  isBitcoin?: boolean;
   minNativeForSend: number;
 }
 
@@ -236,6 +237,20 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     isTon: true,
     minNativeForSend: 0.05,
   },
+  bitcoin: {
+    id: 'bitcoin',
+    name: 'Bitcoin',
+    symbol: 'BTC',
+    usdtContract: '',
+    usdtDecimals: 8,
+    explorerUrl: 'https://mempool.space',
+    apiUrl: 'https://mempool.space/api',
+    rpcUrls: ['https://mempool.space/api'],
+    nativeSymbol: 'BTC',
+    isEvm: false,
+    isBitcoin: true,
+    minNativeForSend: 0.00001,
+  },
   solana: {
     id: 'solana',
     name: 'Solana (HNT + USDC)',
@@ -408,6 +423,14 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     minNativeForSend: 0.01,
   },
+  bitcoin: {
+    ...MAINNET.bitcoin,
+    name: 'Bitcoin Testnet',
+    explorerUrl: 'https://mempool.space/testnet',
+    apiUrl: 'https://mempool.space/testnet/api',
+    rpcUrls: ['https://mempool.space/testnet/api'],
+    minNativeForSend: 0.0001,
+  },
   solana: {
     ...MAINNET.solana,
     name: 'Solana Devnet',
@@ -422,6 +445,7 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
 
 export const ALL_NETWORK_IDS: NetworkId[] = [
   'tron',
+  'bitcoin',
   'ethereum',
   'bsc',
   'polygon',
@@ -438,7 +462,11 @@ export const ALL_NETWORK_IDS: NetworkId[] = [
 
 export function getNetworkConfig(id: NetworkId, testnet = false): NetworkConfig {
   const map = testnet ? TESTNET : MAINNET;
-  return map[id];
+  const cfg = map[id];
+  if (!cfg) {
+    throw new Error(`UNKNOWN_NETWORK:${id}`);
+  }
+  return cfg;
 }
 
 export function getAllNetworks(testnet = false): NetworkConfig[] {
@@ -446,11 +474,27 @@ export function getAllNetworks(testnet = false): NetworkConfig[] {
 }
 
 export function isSolanaNetwork(id: NetworkId): boolean {
-  return getNetworkConfig(id, false).isSolana === true;
+  try {
+    return getNetworkConfig(id, false).isSolana === true;
+  } catch {
+    return false;
+  }
 }
 
 export function isTonNetwork(id: NetworkId): boolean {
-  return getNetworkConfig(id, false).isTon === true;
+  try {
+    return getNetworkConfig(id, false).isTon === true;
+  } catch {
+    return false;
+  }
+}
+
+export function isBitcoinNetwork(id: NetworkId): boolean {
+  try {
+    return getNetworkConfig(id, false).isBitcoin === true;
+  } catch {
+    return false;
+  }
 }
 
 export function isEvmNetwork(id: NetworkId): boolean {

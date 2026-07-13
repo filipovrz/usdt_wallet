@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '3.0.0';
+export const APP_VERSION = '3.2.0';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -11,6 +11,42 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '3.2.0',
+    date: '2026-07-14',
+    changes: [
+      'Bitcoin Lightning — receive (create invoice) + send (pay BOLT11) via LND REST',
+      'On-chain | Lightning tabs when Bitcoin network selected',
+      'Settings: LND REST URL + admin macaroon configuration',
+      'No embedded Lightning node — connect your own LND',
+    ],
+  },
+  {
+    version: '3.1.0',
+    date: '2026-07-14',
+    changes: [
+      'Bitcoin mainnet — native BTC send/receive (P2WPKH bc1, BIP84)',
+      'Vault v6 — bitcoinAddress per account',
+      'Service fee on BTC mainnet (configure OWNER_WALLET.bitcoin)',
+      'No Lightning — classic on-chain only',
+    ],
+  },
+  {
+    version: '3.0.2',
+    date: '2026-07-14',
+    changes: [
+      'TON address fetched live from main process (fixes blank address panel)',
+      'Clear stale account state when wallet is locked',
+    ],
+  },
+  {
+    version: '3.0.1',
+    date: '2026-07-14',
+    changes: [
+      'Fix TON address not showing after upgrade (live session sync)',
+      'Fix refresh crash on TON network (isSolana guard)',
+    ],
+  },
   {
     version: '3.0.0',
     date: '2026-07-14',

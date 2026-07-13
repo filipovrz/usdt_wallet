@@ -72,6 +72,14 @@ export function registerIpcHandlers(wallet: WalletManager): void {
     return wallet.getBalance(payload.accountId, payload.network);
   });
 
+  ipcMain.handle(
+    IPC_CHANNELS.GET_ACCOUNT_NETWORK_ADDRESS,
+    async (_e, payload: { accountId: string; network: NetworkId }) => {
+      if (!payload?.accountId || !payload?.network) return { success: false, error: 'VALIDATION_ERROR' };
+      return wallet.getAccountNetworkAddress(payload.accountId, payload.network);
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.GET_TRON_RESOURCES, async (_e, accountId: string) => {
     if (!accountId) return { success: false, error: 'VALIDATION_ERROR' };
     return wallet.getTronResources(accountId);
@@ -210,4 +218,19 @@ export function registerIpcHandlers(wallet: WalletManager): void {
       return wallet.deployMultisigPolicy(payload.policyId, payload.password);
     }
   );
+
+  ipcMain.handle(IPC_CHANNELS.GET_LIGHTNING_INFO, () => wallet.getLightningInfo());
+  ipcMain.handle(IPC_CHANNELS.GET_LIGHTNING_BALANCE, () => wallet.getLightningBalance());
+  ipcMain.handle(IPC_CHANNELS.CREATE_LIGHTNING_INVOICE, async (_e, payload: { amount: string; memo?: string }) => {
+    if (!payload?.amount) return { success: false, error: 'VALIDATION_ERROR' };
+    return wallet.createLightningInvoice(payload.amount, payload.memo);
+  });
+  ipcMain.handle(IPC_CHANNELS.DECODE_LIGHTNING_INVOICE, async (_e, payload: { paymentRequest: string }) => {
+    if (!payload?.paymentRequest) return { success: false, error: 'VALIDATION_ERROR' };
+    return wallet.decodeLightningInvoice(payload.paymentRequest);
+  });
+  ipcMain.handle(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, async (_e, payload: { paymentRequest: string }) => {
+    if (!payload?.paymentRequest) return { success: false, error: 'VALIDATION_ERROR' };
+    return wallet.payLightningInvoice(payload.paymentRequest);
+  });
 }

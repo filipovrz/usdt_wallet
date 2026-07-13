@@ -6,8 +6,11 @@ import type {
   WalletAccount,
   BalanceInfo,
   NetworkId,
+  BtcLayer,
+  LightningBalance,
 } from '@shared/types';
 import { DEFAULT_SETTINGS } from '@shared/types';
+import { isBitcoinNetwork } from '@shared/networks';
 import { translations, type Language } from '../i18n/translations';
 
 interface WalletContextValue {
@@ -21,7 +24,10 @@ interface WalletContextValue {
   setActiveAccount: (account: WalletAccount | null) => void;
   activeNetwork: NetworkId;
   setActiveNetwork: (network: NetworkId) => void;
+  btcLayer: BtcLayer;
+  setBtcLayer: (layer: BtcLayer) => void;
   balance: BalanceInfo | null;
+  lightningBalance: LightningBalance | null;
   refreshBalance: () => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -43,7 +49,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>('bg');
   const [activeAccount, setActiveAccount] = useState<WalletAccount | null>(null);
   const [activeNetwork, setActiveNetwork] = useState<NetworkId>('tron');
+  const [btcLayer, setBtcLayer] = useState<BtcLayer>('onchain');
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
+  const [lightningBalance, setLightningBalance] = useState<LightningBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,8 +71,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setSettings(res.data!.settings);
           setLangState(res.data!.settings.language);
           setActiveNetwork(res.data!.settings.defaultNetwork);
-          if (res.data!.accounts.length > 0 && !activeAccount) {
-            setActiveAccount(res.data!.accounts[0]);
+          if (res.data!.unlocked && res.data!.accounts.length > 0) {
+            setActiveAccount((prev) => {
+              const live = prev ? res.data!.accounts.find((a) => a.id === prev.id) : undefined;
+              return live ?? res.data!.accounts[0];
+            });
+          } else if (!res.data!.unlocked) {
+            setActiveAccount(null);
           }
         };
         if (options?.sync) {
@@ -80,13 +93,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
     return null;
-  }, [activeAccount]);
+  }, []);
 
   const refreshBalance = useCallback(async () => {
     if (!activeAccount || !session.unlocked) return;
+    if (isBitcoinNetwork(activeNetwork) && btcLayer === 'lightning') {
+      const ln = await window.walletApi.getLightningBalance();
+      if (ln.success && ln.data) {
+        setLightningBalance(ln.data);
+        setBalance({
+          usdt: '0',
+          native: ln.data.local,
+          nativeSymbol: 'BTC',
+        });
+      }
+      return;
+    }
+    setLightningBalance(null);
     const res = await window.walletApi.getBalance(activeAccount.id, activeNetwork);
     if (res.success && res.data) setBalance(res.data);
-  }, [activeAccount, activeNetwork, session.unlocked]);
+  }, [activeAccount, activeNetwork, btcLayer, session.unlocked]);
 
   const touchActivity = useCallback(() => {
     window.walletApi.touchActivity();
@@ -117,7 +143,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const interval = setInterval(refreshBalance, 30000);
       return () => clearInterval(interval);
     }
-  }, [session.unlocked, activeAccount, activeNetwork, refreshBalance]);
+  }, [session.unlocked, activeAccount, activeNetwork, btcLayer, refreshBalance]);
 
   useEffect(() => {
     const handler = () => touchActivity();
@@ -142,7 +168,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setActiveAccount,
         activeNetwork,
         setActiveNetwork,
+        btcLayer,
+        setBtcLayer,
         balance,
+        lightningBalance,
         refreshBalance,
         loading,
         error,

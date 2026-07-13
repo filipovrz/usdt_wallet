@@ -15,6 +15,7 @@ export const networkIdSchema = z.enum([
   'linea',
   'scroll',
   'ton',
+  'bitcoin',
   'solana',
 ]);
 
@@ -81,6 +82,8 @@ export const settingsSchema = z.object({
   scrollscanApiKey: z.string().max(256),
   defaultFeeTier: z.enum(['slow', 'normal', 'fast']),
   checkUpdatesOnStart: z.boolean(),
+  lndRestUrl: z.string().max(512),
+  lndMacaroon: z.string().max(4096),
 });
 
 export const multisigSchema = z.object({

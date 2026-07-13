@@ -21,11 +21,13 @@ import {
   getTokenSpec,
   isSolanaNetwork,
   isTonNetwork,
+  isBitcoinNetwork,
   getAssetBalanceFromInfo,
 } from '../../shared/networks';
 import { deriveKeysFromMnemonic } from '../crypto/keys';
 import { SolanaService } from './solana-service';
 import { TonService } from './ton-service';
+import { BitcoinService } from './bitcoin-service';
 import { fetchWithFallback } from './rpc-client';
 
 const ERC20_ABI = [
@@ -57,6 +59,7 @@ export class BlockchainService {
   private settings: AppSettings;
   private solana = new SolanaService();
   private ton = new TonService();
+  private bitcoin = new BitcoinService();
 
   constructor(settings?: AppSettings) {
     this.settings = settings || ({ trongridApiKey: '' } as AppSettings);
@@ -106,6 +109,9 @@ export class BlockchainService {
   }
 
   async getBalance(network: NetworkId, address: string): Promise<BalanceInfo> {
+    if (isBitcoinNetwork(network)) {
+      return this.bitcoin.getBalance(address, this.settings.testnetMode);
+    }
     if (isTonNetwork(network)) {
       return this.ton.getBalance(address, this.settings.testnetMode, this.settings);
     }
@@ -185,6 +191,10 @@ export class BlockchainService {
   }
 
   async estimateFees(network: NetworkId, from: string, to: string): Promise<FeeEstimate> {
+    if (isBitcoinNetwork(network)) {
+      const fees = await this.bitcoin.estimateFees(this.settings.testnetMode);
+      return { ...fees, symbol: 'BTC' };
+    }
     if (isTonNetwork(network)) {
       const fee = await this.ton.estimateTonFee(this.settings.testnetMode);
       return { slow: fee, normal: fee, fast: fee, symbol: 'TON' };
@@ -230,6 +240,7 @@ export class BlockchainService {
   }
 
   validateAddress(network: NetworkId, address: string): boolean {
+    if (isBitcoinNetwork(network)) return this.bitcoin.validateAddress(address, this.settings.testnetMode);
     if (isTonNetwork(network)) return this.ton.validateAddress(address);
     if (isSolanaNetwork(network)) return this.solana.validateAddress(address);
     if (network === 'tron') return TronWeb.isAddress(address);
@@ -247,6 +258,18 @@ export class BlockchainService {
     accountIndex = 0,
     assetUsdPrice = 0
   ): Promise<SendPreview> {
+    if (isBitcoinNetwork(network)) {
+      return this.bitcoin.previewSend(
+        mnemonic,
+        to,
+        amount,
+        passphrase,
+        this.settings.testnetMode,
+        feeTier,
+        accountIndex,
+        assetUsdPrice
+      );
+    }
     if (isTonNetwork(network)) {
       return this.ton.previewSend(
         mnemonic,
@@ -399,6 +422,18 @@ export class BlockchainService {
     accountIndex = 0,
     assetUsdPrice = 0
   ): Promise<{ hash: string; fee: string; from: string; assetSymbol: string }> {
+    if (isBitcoinNetwork(network)) {
+      return this.bitcoin.send(
+        mnemonic,
+        to,
+        amount,
+        passphrase,
+        this.settings.testnetMode,
+        feeTier,
+        accountIndex,
+        assetUsdPrice
+      );
+    }
     if (isTonNetwork(network)) {
       return this.ton.send(
         mnemonic,
@@ -640,6 +675,9 @@ export class BlockchainService {
   }
 
   async fetchTransactions(network: NetworkId, address: string, limit = 20): Promise<RemoteTransaction[]> {
+    if (isBitcoinNetwork(network)) {
+      return this.bitcoin.fetchTransactions(address, this.settings.testnetMode, limit);
+    }
     if (isTonNetwork(network)) {
       return this.ton.fetchTransactions(address, this.settings.testnetMode, limit);
     }

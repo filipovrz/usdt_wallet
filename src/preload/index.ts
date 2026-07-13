@@ -24,6 +24,9 @@ import type {
   UpdateInfo,
   HardwareDevice,
   HardwareAddressResult,
+  LightningBalance,
+  LightningInvoiceInfo,
+  LightningDecodedInvoice,
 } from '../shared/types';
 
 const api = {
@@ -49,6 +52,11 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.GET_MNEMONIC, { password }),
   getBalance: (accountId: string, network: NetworkId): Promise<ApiResponse<BalanceInfo>> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_BALANCE, { accountId, network }),
+  getAccountNetworkAddress: (
+    accountId: string,
+    network: NetworkId
+  ): Promise<ApiResponse<{ address: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_ACCOUNT_NETWORK_ADDRESS, { accountId, network }),
   getTronResources: (accountId: string): Promise<ApiResponse<TronResources>> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_TRON_RESOURCES, accountId),
   getFeeEstimate: (network: NetworkId, accountId: string): Promise<ApiResponse<FeeEstimate>> =>
@@ -106,6 +114,17 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.GET_HARDWARE_ADDRESS, { device, network }),
   deployMultisigPolicy: (policyId: string, password: string): Promise<ApiResponse<{ txHash: string }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.DEPLOY_MULTISIG, { policyId, password }),
+  getLightningInfo: (): Promise<
+    ApiResponse<{ alias: string; synced: boolean; blockHeight: number; configured: boolean }>
+  > => ipcRenderer.invoke(IPC_CHANNELS.GET_LIGHTNING_INFO),
+  getLightningBalance: (): Promise<ApiResponse<LightningBalance>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_LIGHTNING_BALANCE),
+  createLightningInvoice: (amount: string, memo?: string): Promise<ApiResponse<LightningInvoiceInfo>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.CREATE_LIGHTNING_INVOICE, { amount, memo }),
+  decodeLightningInvoice: (paymentRequest: string): Promise<ApiResponse<LightningDecodedInvoice>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DECODE_LIGHTNING_INVOICE, { paymentRequest }),
+  payLightningInvoice: (paymentRequest: string): Promise<ApiResponse<{ hash: string; fee: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PAY_LIGHTNING_INVOICE, { paymentRequest }),
 };
 
 contextBridge.exposeInMainWorld('walletApi', api);

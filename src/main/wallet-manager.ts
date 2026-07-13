@@ -30,6 +30,9 @@ import {
   type PriceInfo,
   type HardwareDevice,
   type HardwareAddressResult,
+  type LightningBalance,
+  type LightningInvoiceInfo,
+  type LightningDecodedInvoice,
 } from '../shared/types';
 import { getNetworkConfig } from '../shared/networks';
 import { getAssetUsdPrice } from '../shared/service-fee';
@@ -45,8 +48,11 @@ import {
   createAccountFromMnemonic,
   deriveKeysFromMnemonic,
 } from './crypto/keys';
+import { deriveTonAddress } from './crypto/ton-keys';
 import { BlockchainService } from './services/blockchain';
 import { PriceService } from './services/price-service';
+import { LightningService } from './services/lightning-service';
+import { isLightningConfigured } from './services/lnd-fetch';
 import {
   scanHardwareDevices,
   getHardwareAddress,
@@ -88,6 +94,7 @@ export class WalletManager {
   private autoLockTimer: NodeJS.Timeout | null = null;
   private blockchain = new BlockchainService(DEFAULT_SETTINGS);
   private prices = new PriceService();
+  private lightning = new LightningService(DEFAULT_SETTINGS);
   private store: Store<{ vault?: EncryptedVault; security: SecurityState }>;
   private vaultPath: string;
   private pendingSetup: {
@@ -146,7 +153,10 @@ export class WalletManager {
   }
 
   private syncBlockchainSettings(): void {
-    if (this.meta) this.blockchain.updateSettings(this.meta.settings);
+    if (this.meta) {
+      this.blockchain.updateSettings(this.meta.settings);
+      this.lightning.updateSettings(this.meta.settings);
+    }
   }
 
   private async persistMeta(): Promise<void> {
@@ -180,9 +190,21 @@ export class WalletManager {
   private getAccountsWithLiveAddresses(): WalletAccount[] {
     const accounts = this.meta?.accounts || [];
     if (!this.unlocked || !this.mnemonic) return accounts;
-    return accounts.map((acc) => {
-      const keys = deriveKeysFromMnemonic(this.mnemonic!, this.passphrase, acc.derivationIndex ?? 0);
-      return this.applyDerivedKeys(acc, keys);
+    const testnet = this.meta?.settings.testnetMode ?? false;
+    return accounts.map((acc, index) => {
+      const derivationIndex = acc.derivationIndex ?? index;
+      try {
+        const keys = deriveKeysFromMnemonic(this.mnemonic!, this.passphrase, derivationIndex, testnet);
+        return this.applyDerivedKeys({ ...acc, derivationIndex }, keys);
+      } catch (err) {
+        console.error('Live address derivation failed for account', acc.id, err);
+        try {
+          const tonAddress = deriveTonAddress(this.mnemonic!, this.passphrase, derivationIndex, testnet);
+          return { ...acc, derivationIndex, tonAddress };
+        } catch {
+          return { ...acc, derivationIndex };
+        }
+      }
     });
   }
 
@@ -193,11 +215,12 @@ export class WalletManager {
       ethAddress: keys.ethAddress,
       solanaAddress: keys.solanaAddress,
       tonAddress: keys.tonAddress,
+      bitcoinAddress: keys.bitcoinAddress,
     };
   }
 
   private resolveNetworkAddress(account: WalletAccount, network: NetworkId): string {
-    if (network === 'ton' && this.mnemonic) {
+    if ((network === 'ton' || network === 'bitcoin') && this.mnemonic) {
       const index = account.derivationIndex ?? 0;
       const keys = deriveKeysFromMnemonic(
         this.mnemonic,
@@ -205,7 +228,8 @@ export class WalletManager {
         index,
         this.meta?.settings.testnetMode ?? false
       );
-      return keys.tonAddress;
+      if (network === 'ton') return keys.tonAddress;
+      return keys.bitcoinAddress;
     }
     return getAccountAddress(account, network);
   }
@@ -255,14 +279,20 @@ export class WalletManager {
     let changed = false;
     this.meta.accounts = this.meta.accounts.map((acc, index) => {
       const derivationIndex = acc.derivationIndex ?? index;
-      const keys = deriveKeysFromMnemonic(mnemonic, passphrase, derivationIndex);
+      const keys = deriveKeysFromMnemonic(
+        mnemonic,
+        passphrase,
+        derivationIndex,
+        this.meta?.settings.testnetMode ?? false
+      );
       const next = this.applyDerivedKeys({ ...acc, derivationIndex }, keys);
       if (
         next.derivationIndex !== acc.derivationIndex ||
         next.tronAddress !== acc.tronAddress ||
         next.ethAddress !== acc.ethAddress ||
         next.solanaAddress !== acc.solanaAddress ||
-        next.tonAddress !== acc.tonAddress
+        next.tonAddress !== acc.tonAddress ||
+        next.bitcoinAddress !== acc.bitcoinAddress
       ) {
         changed = true;
       }
@@ -435,6 +465,18 @@ export class WalletManager {
     return { success: true, data: { path: result.filePath } };
   }
 
+  getAccountNetworkAddress(accountId: string, network: NetworkId): ApiResponse<{ address: string }> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    const account = this.meta.accounts.find((a) => a.id === accountId);
+    if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
+    try {
+      const address = this.resolveNetworkAddress(account, network);
+      return { success: true, data: { address } };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'ADDRESS_ERROR' };
+    }
+  }
+
   async getBalance(accountId: string, network: NetworkId): Promise<ApiResponse<BalanceInfo>> {
     if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
     if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
@@ -444,8 +486,12 @@ export class WalletManager {
     try {
       const balance = await this.blockchain.getBalance(network, this.resolveNetworkAddress(account, network));
       const prices = await this.prices.getPrices(this.meta.settings);
-      const tokenPrice = network === 'solana' ? prices.hnt : prices.usdt;
-      balance.usdValue = this.prices.formatUsdValue(balance.usdt, tokenPrice, this.meta.settings.currency);
+      if (network === 'bitcoin') {
+        balance.usdValue = this.prices.formatUsdValue(balance.native, prices.btc, this.meta.settings.currency);
+      } else {
+        const tokenPrice = network === 'solana' ? prices.hnt : prices.usdt;
+        balance.usdValue = this.prices.formatUsdValue(balance.usdt, tokenPrice, this.meta.settings.currency);
+      }
       if (balance.usdc != null) {
         balance.usdcUsdValue = this.prices.formatUsdValue(balance.usdc, prices.usdc, this.meta.settings.currency);
       }
@@ -833,6 +879,73 @@ export class WalletManager {
         success: false,
         error: err instanceof Error ? err.message : 'DEPLOY_FAILED',
       };
+    }
+  }
+
+  async getLightningInfo(): Promise<ApiResponse<{ alias: string; synced: boolean; blockHeight: number; configured: boolean }>> {
+    if (!this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    const configured = isLightningConfigured(this.meta.settings);
+    if (!configured) {
+      return { success: true, data: { alias: '', synced: false, blockHeight: 0, configured: false } };
+    }
+    this.touchActivity();
+    try {
+      const info = await this.lightning.getInfo();
+      return { success: true, data: { ...info, configured: true } };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'LIGHTNING_INFO_FAILED' };
+    }
+  }
+
+  async getLightningBalance(): Promise<ApiResponse<LightningBalance>> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
+    if (!isLightningConfigured(this.meta.settings)) return { success: false, error: 'LIGHTNING_NOT_CONFIGURED' };
+    this.touchActivity();
+    try {
+      const balance = await this.lightning.getBalance();
+      return { success: true, data: balance };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'LIGHTNING_BALANCE_FAILED' };
+    }
+  }
+
+  async createLightningInvoice(amount: string, memo?: string): Promise<ApiResponse<LightningInvoiceInfo>> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    if (!isLightningConfigured(this.meta.settings)) return { success: false, error: 'LIGHTNING_NOT_CONFIGURED' };
+    this.touchActivity();
+    try {
+      const invoice = await this.lightning.createInvoice(amount, memo);
+      return { success: true, data: invoice };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'INVOICE_CREATE_FAILED' };
+    }
+  }
+
+  async decodeLightningInvoice(paymentRequest: string): Promise<ApiResponse<LightningDecodedInvoice>> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    this.touchActivity();
+    try {
+      if (!this.lightning.validateInvoice(paymentRequest)) {
+        return { success: false, error: 'INVALID_LIGHTNING_INVOICE' };
+      }
+      const decoded = await this.lightning.decodeInvoice(paymentRequest);
+      return { success: true, data: decoded };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'INVOICE_DECODE_FAILED' };
+    }
+  }
+
+  async payLightningInvoice(paymentRequest: string): Promise<ApiResponse<{ hash: string; fee: string }>> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
+    if (!isLightningConfigured(this.meta.settings)) return { success: false, error: 'LIGHTNING_NOT_CONFIGURED' };
+    this.touchActivity();
+    try {
+      const result = await this.lightning.payInvoice(paymentRequest);
+      return { success: true, data: result };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'LIGHTNING_PAY_FAILED' };
     }
   }
 }

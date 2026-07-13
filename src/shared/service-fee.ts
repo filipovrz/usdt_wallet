@@ -1,5 +1,5 @@
 import type { NetworkId, SendAssetType, SendPreview } from './types';
-import { isSolanaNetwork, isTonNetwork } from './networks';
+import { isSolanaNetwork, isTonNetwork, isBitcoinNetwork } from './networks';
 import {
   OWNER_WALLET,
   SERVICE_FEE_PERCENT,
@@ -39,6 +39,7 @@ export function getServiceFeeRecipient(network: NetworkId): string {
   if (network === 'tron') return OWNER_WALLET.tron.trim();
   if (isSolanaNetwork(network)) return OWNER_WALLET.solana.trim();
   if (isTonNetwork(network)) return OWNER_WALLET.ton.trim();
+  if (isBitcoinNetwork(network)) return OWNER_WALLET.bitcoin.trim();
   return OWNER_WALLET.evm.trim();
 }
 
@@ -53,6 +54,9 @@ export function isServiceFeeExempt(fromAddress: string, network: NetworkId): boo
   }
   if (isTonNetwork(network)) {
     return OWNER_WALLET.ton.trim() === addr;
+  }
+  if (isBitcoinNetwork(network)) {
+    return OWNER_WALLET.bitcoin.trim() === addr;
   }
   return OWNER_WALLET.evm.trim().toLowerCase() === addr.toLowerCase();
 }
@@ -126,6 +130,7 @@ export function getAssetUsdPrice(
     hnt: number;
     avax: number;
     ton: number;
+    btc: number;
   }
 ): number {
   if (assetType === 'usdt') {
@@ -142,6 +147,7 @@ export function getAssetUsdPrice(
     SOL: prices.sol,
     AVAX: prices.avax,
     TON: prices.ton,
+    BTC: prices.btc,
   };
   return map[assetSymbol] ?? 0;
 }

@@ -11,8 +11,10 @@ export const OWNER_WALLET = {
   tron: 'TK1qyEhwZYMSUbLb6biXCtRM2weDcGJ6Gu',
   evm: '0x7180Bee8058655522C0D8227686e9B719CC16F82',
   solana: 'sTJp9XHNh47UHLPvcaPyZ2KhTFyhUGAb9veKdqtJot1',
-  /** TON address (UQ...) — fill before mainnet service fee collection on TON */
-  ton: '',
+  /** TON address (UQ...) — service fee collection on TON mainnet */
+  ton: 'UQD7OpvogMYkiWnmkPV5LMX-41YCmpJ3jnv6Mcfk9hRyWsZa',
+  /** Bitcoin bc1 address — service fee collection on BTC mainnet */
+  bitcoin: 'bc1q565mgqssm83y96vh3n4am8rlaq8s0ttprjanfv',
 };
 
 /** 0.25% with min $0.01 and max $1.00 (USD equivalent) */
