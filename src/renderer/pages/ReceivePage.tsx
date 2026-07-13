@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Card, NetworkSelector, CopyButton, LoadingSpinner, ErrorAlert } from '../components/ui';
+import { Card, NetworkSelector, AccountSelector, CopyButton, LoadingSpinner, ErrorAlert } from '../components/ui';
 import { getAccountAddress, isEvmNetwork, isValidEvmAddress } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 
 export function ReceivePage() {
-  const { activeAccount, activeNetwork, setActiveNetwork, settings, t } = useWallet();
+  const { activeAccount, activeNetwork, setActiveNetwork, settings, session, setActiveAccount, t } = useWallet();
   const notify = useNotify();
   const [qrDataUrl, setQrDataUrl] = useState('');
   const address = activeAccount ? getAccountAddress(activeAccount, activeNetwork) : '';
@@ -29,6 +29,11 @@ export function ReceivePage() {
     <div className="p-8">
       <h1 className="mb-6 text-2xl font-bold">{t.receive}</h1>
       <Card className="max-w-md space-y-6 text-center">
+        <AccountSelector
+          accounts={session.accounts}
+          value={activeAccount.id}
+          onChange={setActiveAccount}
+        />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
         {evmInvalid && (
           <ErrorAlert message="Невалиден Ethereum адрес — заключете и отключете портфейла отново." />

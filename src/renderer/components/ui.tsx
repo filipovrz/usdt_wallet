@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, useState } from 'react';
-import type { NetworkId } from '@shared/types';
+import type { NetworkId, SendAssetType, WalletAccount } from '@shared/types';
 import { ALL_NETWORK_IDS } from '@shared/networks';
 import { getNetworkConfig } from '@shared/networks';
 
@@ -102,6 +102,41 @@ export function CopyButton({
   );
 }
 
+export function AccountSelector({
+  accounts,
+  value,
+  onChange,
+  className,
+  label = 'Акаунт / Account',
+}: {
+  accounts: WalletAccount[];
+  value: string;
+  onChange: (account: WalletAccount) => void;
+  className?: string;
+  label?: string;
+}) {
+  if (accounts.length <= 1) return null;
+  return (
+    <div className={clsx('space-y-2', className)}>
+      <span className="text-sm text-gray-400">{label}</span>
+      <select
+        className="w-full rounded-lg border border-surface-600 bg-surface-800 px-3 py-2 text-sm"
+        value={value}
+        onChange={(e) => {
+          const acc = accounts.find((a) => a.id === e.target.value);
+          if (acc) onChange(acc);
+        }}
+      >
+        {accounts.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export function NetworkSelector({
   value,
   onChange,
@@ -114,7 +149,7 @@ export function NetworkSelector({
   return (
     <div className="space-y-2">
       <span className="text-sm text-gray-400">Мрежа / Network</span>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
         {ALL_NETWORK_IDS.map((net) => (
           <button
             key={net}
@@ -170,20 +205,23 @@ export function SendAssetSelector({
   value,
   onChange,
   usdtLabel,
+  usdcLabel,
   nativeLabel,
 }: {
-  value: 'usdt' | 'native';
-  onChange: (v: 'usdt' | 'native') => void;
+  value: SendAssetType;
+  onChange: (v: SendAssetType) => void;
   usdtLabel: string;
+  usdcLabel?: string;
   nativeLabel: string;
 }) {
-  const options = [
-    { id: 'usdt' as const, label: usdtLabel },
-    { id: 'native' as const, label: nativeLabel },
+  const options: Array<{ id: SendAssetType; label: string }> = [
+    { id: 'usdt', label: usdtLabel },
+    ...(usdcLabel ? [{ id: 'usdc' as const, label: usdcLabel }] : []),
+    { id: 'native', label: nativeLabel },
   ];
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
+      <div className={clsx('grid gap-2', options.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
         {options.map((option) => (
           <button
             key={option.id}

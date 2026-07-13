@@ -8,7 +8,7 @@ function getElectronExecutable(): string {
   return path.join(root, 'node_modules', 'electron', 'dist', binary);
 }
 
-test.describe('USDT Wallet E2E', () => {
+test.describe('EvtinkoWallet E2E', () => {
   test('app launches without crash', async () => {
     const app = await electron.launch({
       cwd: root,
@@ -21,7 +21,7 @@ test.describe('USDT Wallet E2E', () => {
     try {
       const window = await app.firstWindow({ timeout: 60_000 });
       await window.waitForLoadState('domcontentloaded');
-      await expect(window).toHaveTitle(/USDT Wallet/i, { timeout: 30_000 });
+      await expect(window).toHaveTitle(/EvtinkoWallet/i, { timeout: 30_000 });
 
       await window.waitForSelector('#root', { timeout: 30_000 });
       const html = await window.locator('#root').innerHTML();

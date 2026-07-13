@@ -5,6 +5,7 @@ import {
   Card,
   Input,
   NetworkSelector,
+  AccountSelector,
   ErrorAlert,
   SuccessAlert,
   LoadingSpinner,
@@ -13,18 +14,28 @@ import {
   SendAssetSelector,
   getExplorerTxUrl,
 } from '../components/ui';
-import type { SendPreview, AddressBookEntry, FeeTier, SendAssetType } from '@shared/types';
-import { getNetworkConfig, isSolanaNetwork } from '@shared/networks';
-import { getAccountAddress } from '@shared/types';
+import type { SendPreview, AddressBookEntry, FeeTier, SendAssetType, NetworkId } from '@shared/types';
+import { getNetworkConfig, isSolanaNetwork, networkHasUsdc } from '@shared/networks';
+import { getAccountAddress, isEvmNetwork } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 import { formatApiError } from '../i18n/api-messages';
 
+function isSameRecipient(ownAddress: string, to: string, network: NetworkId): boolean {
+  const a = ownAddress.trim();
+  const b = to.trim();
+  if (isEvmNetwork(network)) {
+    return a.toLowerCase() === b.toLowerCase();
+  }
+  return a === b;
+}
+
 export function SendPage() {
-  const { activeAccount, activeNetwork, setActiveNetwork, settings, t } = useWallet();
+  const { activeAccount, activeNetwork, setActiveNetwork, settings, session, setActiveAccount, t } = useWallet();
   const notify = useNotify();
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
   const nativeSymbol = cfg.nativeSymbol;
   const tokenSymbol = cfg.symbol;
+  const hasUsdc = networkHasUsdc(activeNetwork, settings.testnetMode);
 
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
@@ -36,6 +47,7 @@ export function SendPage() {
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
   const [txHash, setTxHash] = useState('');
+  const [sentSymbol, setSentSymbol] = useState('');
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<AddressBookEntry[]>([]);
 
@@ -45,10 +57,25 @@ export function SendPage() {
     });
   }, [activeNetwork]);
 
+  useEffect(() => {
+    if (assetType === 'usdc' && !hasUsdc) setAssetType('usdt');
+  }, [activeNetwork, hasUsdc, assetType]);
+
   if (!activeAccount) return <LoadingSpinner />;
 
   const amountLabel =
-    assetType === 'usdt' ? `${t.amount} (${tokenSymbol})` : `${t.amount} (${nativeSymbol})`;
+    assetType === 'native'
+      ? `${t.amount} (${nativeSymbol})`
+      : assetType === 'usdc'
+        ? `${t.amount} (USDC)`
+        : `${t.amount} (${tokenSymbol})`;
+
+  const resolveSentSymbol = (previewData?: SendPreview) =>
+    previewData?.assetSymbol ||
+    (assetType === 'native' ? nativeSymbol : assetType === 'usdc' ? 'USDC' : tokenSymbol);
+
+  const formatSendSuccess = (symbol: string) =>
+    notify.t.toast.sendSuccessAsset.replace('{symbol}', symbol);
 
   const handlePreview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +88,8 @@ export function SendPage() {
     setWarning('');
 
     const ownAddress = getAccountAddress(activeAccount, activeNetwork);
-    if (activeNetwork === 'tron' && to.trim() === ownAddress) {
-      const msg = notify.t.errors.SAME_ACCOUNT_TRON;
+    if (isSameRecipient(ownAddress, to, activeNetwork)) {
+      const msg = notify.t.errors.SAME_ACCOUNT;
       setError(msg);
       notify.error(msg);
       setLoading(false);
@@ -89,7 +116,7 @@ export function SendPage() {
         return;
       }
 
-      if (res.data.assetType === 'usdt' && !res.data.hasEnoughNative) {
+      if (res.data.assetType !== 'native' && !res.data.hasEnoughNative) {
         const msg = formatApiError(
           `INSUFFICIENT_NATIVE:${res.data.feeSymbol}:${res.data.minNativeRequired}`,
           notify.t
@@ -119,6 +146,7 @@ export function SendPage() {
   const handleSend = async (previewData?: SendPreview) => {
     setLoading(true);
     setError('');
+    const symbol = resolveSentSymbol(previewData);
     const res = await window.walletApi.send({
       accountId: activeAccount.id,
       network: activeNetwork,
@@ -130,8 +158,9 @@ export function SendPage() {
     });
     if (res.success && res.data) {
       setTxHash(res.data.hash);
+      setSentSymbol(symbol);
       setStep('done');
-      notify.success(notify.t.toast.sendSuccess);
+      notify.success(formatSendSuccess(symbol));
     } else {
       const msg = notify.apiError(res.error);
       setError(msg);
@@ -140,10 +169,11 @@ export function SendPage() {
   };
 
   if (step === 'done') {
+    const successMsg = formatSendSuccess(sentSymbol || tokenSymbol);
     return (
       <div className="p-8">
         <Card className="max-w-lg space-y-4">
-          <SuccessAlert message={`${notify.t.toast.sendSuccess} TX: ${txHash.slice(0, 20)}...`} />
+          <SuccessAlert message={`${successMsg} TX: ${txHash.slice(0, 20)}...`} />
           <Button
             variant="secondary"
             onClick={() =>
@@ -160,6 +190,7 @@ export function SendPage() {
               setPassword('');
               setPreview(null);
               setWarning('');
+              setSentSymbol('');
             }}
           >
             {t.continue}
@@ -173,6 +204,11 @@ export function SendPage() {
     <div className="p-8">
       <h1 className="mb-6 text-2xl font-bold">{t.send}</h1>
       <Card className="max-w-lg space-y-6">
+        <AccountSelector
+          accounts={session.accounts}
+          value={activeAccount.id}
+          onChange={setActiveAccount}
+        />
         <NetworkSelector value={activeNetwork} onChange={setActiveNetwork} testnet={settings.testnetMode} />
 
         {settings.offlineMode && <WarningAlert message={notify.t.toast.offlineBlocked} />}
@@ -183,15 +219,37 @@ export function SendPage() {
             <p>
               Amount: {preview.amount} {preview.assetSymbol}
             </p>
+            {preview.serviceFeeExempt ? (
+              <p className="text-brand-300">{t.serviceFeeExempt}</p>
+            ) : preview.serviceFee && parseFloat(preview.serviceFee) > 0 ? (
+              <p>
+                {t.serviceFee}: {preview.serviceFee} {preview.serviceFeeSymbol}
+                {preview.serviceFeeUsd != null && (
+                  <span className="text-gray-500"> (~${preview.serviceFeeUsd.toFixed(2)})</span>
+                )}
+              </p>
+            ) : null}
             <p>
-              Fee: ~{preview.fee} {preview.feeSymbol}
+              Network fee: ~{preview.fee} {preview.feeSymbol}
             </p>
             {preview.assetType === 'native' && (
               <p className="text-gray-400">
-                Total: ~{(parseFloat(preview.amount) + parseFloat(preview.fee)).toFixed(6)}{' '}
+                Total: ~
+                {(
+                  parseFloat(preview.amount) +
+                  parseFloat(preview.fee) +
+                  parseFloat(preview.serviceFee || '0')
+                ).toFixed(6)}{' '}
                 {preview.assetSymbol}
               </p>
             )}
+            {preview.assetType !== 'native' &&
+              preview.serviceFee &&
+              parseFloat(preview.serviceFee) > 0 && (
+                <p className="text-gray-400">
+                  Total debit: {preview.totalAssetDebit || preview.amount} {preview.assetSymbol}
+                </p>
+              )}
           </div>
         )}
 
@@ -214,6 +272,7 @@ export function SendPage() {
                   value={assetType}
                   onChange={setAssetType}
                   usdtLabel={tokenSymbol}
+                  usdcLabel={hasUsdc ? 'USDC' : undefined}
                   nativeLabel={nativeSymbol}
                 />
                 {assetType === 'native' && (
@@ -245,7 +304,7 @@ export function SendPage() {
               {!isSolanaNetwork(activeNetwork) && (
                 <div className="space-y-2">
                   <span className="text-sm text-gray-400">
-                    {activeNetwork === 'tron' && assetType === 'usdt' ? 'Fee priority' : 'Gas speed'}
+                    {activeNetwork === 'tron' && assetType !== 'native' ? 'Fee priority' : 'Gas speed'}
                   </span>
                   <FeeTierSelector value={feeTier} onChange={setFeeTier} />
                 </div>

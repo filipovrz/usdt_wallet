@@ -1,5 +1,5 @@
 /**
- * USDT Wallet — automated test suite
+ * EvtinkoWallet — automated test suite
  * Run: npm test
  * Live network checks: npm run test:live
  */
@@ -22,6 +22,8 @@ const { DEFAULT_SETTINGS, VAULT_VERSION } = require(path.join(root, 'dist-electr
 const { createWalletSchema, sendSchema } = require(path.join(root, 'dist-electron/shared/schemas.js'));
 const { multisigSchema } = require(path.join(root, 'dist-electron/shared/schemas.js'));
 const { APP_VERSION } = require(path.join(root, 'dist-electron/shared/version.js'));
+const { calculateServiceFee, computeServiceFeeAmount, isServiceFeeEnabled } = require(path.join(root, 'dist-electron/shared/service-fee.js'));
+const { OWNER_WALLET } = require(path.join(root, 'dist-electron/shared/service-fee.config.js'));
 const { compareSemver } = require(path.join(root, 'scripts/test-helpers.mjs'));
 
 const LIVE = process.argv.includes('--live');
@@ -53,7 +55,7 @@ const TEST_MNEMONIC =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
 async function runTests() {
-  console.log(`\nUSDT Wallet Test Suite v${APP_VERSION}\n${'='.repeat(40)}\n`);
+  console.log(`\nEvtinkoWallet Test Suite v${APP_VERSION}\n${'='.repeat(40)}\n`);
 
   // Version sync
   try {
@@ -114,6 +116,12 @@ async function runTests() {
     assert(keys1.ethAddress.startsWith('0x'), `eth address format: ${keys1.ethAddress}`);
     assert(keys1.ethAddress.length === 42, `eth address length: ${keys1.ethAddress.length}`);
     assert(keys1.solanaAddress.length >= 32, `solana address format: ${keys1.solanaAddress}`);
+
+    const acc0 = deriveKeysFromMnemonic(TEST_MNEMONIC, '', 0);
+    const acc1 = deriveKeysFromMnemonic(TEST_MNEMONIC, '', 1);
+    assert(acc0.ethAddress !== acc1.ethAddress, 'multi-account eth addresses must differ');
+    assert(acc0.tronAddress !== acc1.tronAddress, 'multi-account tron addresses must differ');
+    assert(acc0.solanaAddress !== acc1.solanaAddress, 'multi-account solana addresses must differ');
     ok(`Key derivation (TRON: ${keys1.tronAddress.slice(0, 8)}…, SOL: ${keys1.solanaAddress.slice(0, 8)}…)`);
   } catch (e) {
     fail('Mnemonic & key derivation', e);
@@ -137,6 +145,25 @@ async function runTests() {
     ok('Address validation (TRON + EVM + Solana)');
   } catch (e) {
     fail('Address validation', e);
+  }
+
+  // Service fee
+  try {
+    assert(isServiceFeeEnabled(false), 'fee enabled when owner configured');
+    assert(!isServiceFeeEnabled(true), 'fee disabled on testnet');
+    const q100 = computeServiceFeeAmount('100', 'USDT', 1);
+    assert(parseFloat(q100.amount) === 0.25, `100 USDT fee expected 0.25 got ${q100.amount}`);
+    const qSmall = computeServiceFeeAmount('1', 'USDT', 1);
+    assert(parseFloat(qSmall.amount) === 0.01, 'min fee 0.01');
+    const qBig = computeServiceFeeAmount('10000', 'USDT', 1);
+    assert(parseFloat(qBig.amount) === 1, 'max fee 1 USDT');
+    const off = calculateServiceFee('100', 'USDT', 1, OWNER_WALLET.tron, 'tron', false);
+    assert(parseFloat(off.amount) === 0, 'owner exempt from fee');
+    const userFee = calculateServiceFee('100', 'USDT', 1, 'TOtherUserxxxxxxxxxxxxxxxxxxxxxx', 'tron', false);
+    assert(parseFloat(userFee.amount) === 0.25, 'non-owner pays fee');
+    ok('Service fee calculation (0.25%, min/max, gating)');
+  } catch (e) {
+    fail('Service fee', e);
   }
 
   // Zod schemas

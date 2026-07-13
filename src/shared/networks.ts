@@ -1,4 +1,4 @@
-import type { NetworkId } from './types';
+import type { NetworkId, SendAssetType } from './types';
 
 export interface NetworkConfig {
   id: NetworkId;
@@ -6,9 +6,12 @@ export interface NetworkConfig {
   symbol: string;
   usdtContract: string;
   usdtDecimals: number;
+  usdcContract?: string;
+  usdcDecimals?: number;
   explorerUrl: string;
   rpcUrls: string[];
   apiUrl?: string;
+  explorerApiUrl?: string;
   nativeSymbol: string;
   chainId?: number;
   isEvm: boolean;
@@ -36,7 +39,10 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     symbol: 'USDT',
     usdtContract: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
     usdtDecimals: 6,
+    usdcContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    usdcDecimals: 6,
     explorerUrl: 'https://etherscan.io',
+    explorerApiUrl: 'https://api.etherscan.io/api',
     rpcUrls: [
       'https://ethereum.publicnode.com',
       'https://rpc.ankr.com/eth',
@@ -53,7 +59,10 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     symbol: 'USDT',
     usdtContract: '0x55d398326f99059fF775485246999027B3197955',
     usdtDecimals: 18,
+    usdcContract: '0x8AC76a51cc950d9822D32929f47Ab80fE16538C8',
+    usdcDecimals: 18,
     explorerUrl: 'https://bscscan.com',
+    explorerApiUrl: 'https://api.bscscan.com/api',
     rpcUrls: ['https://bsc-dataseed.binance.org', 'https://rpc.ankr.com/bsc'],
     nativeSymbol: 'BNB',
     chainId: 56,
@@ -66,19 +75,88 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     symbol: 'USDT',
     usdtContract: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
     usdtDecimals: 6,
+    usdcContract: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+    usdcDecimals: 6,
     explorerUrl: 'https://polygonscan.com',
+    explorerApiUrl: 'https://api.polygonscan.com/api',
     rpcUrls: ['https://polygon-rpc.com', 'https://rpc.ankr.com/polygon'],
     nativeSymbol: 'MATIC',
     chainId: 137,
     isEvm: true,
     minNativeForSend: 0.05,
   },
+  arbitrum: {
+    id: 'arbitrum',
+    name: 'Arbitrum One',
+    symbol: 'USDT',
+    usdtContract: '0xFd086bC7CD5C481DCC9CE8C4b9f96c9A8E2F2a',
+    usdtDecimals: 6,
+    usdcContract: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    usdcDecimals: 6,
+    explorerUrl: 'https://arbiscan.io',
+    explorerApiUrl: 'https://api.arbiscan.io/api',
+    rpcUrls: ['https://arb1.arbitrum.io/rpc', 'https://rpc.ankr.com/arbitrum'],
+    nativeSymbol: 'ETH',
+    chainId: 42161,
+    isEvm: true,
+    minNativeForSend: 0.0005,
+  },
+  base: {
+    id: 'base',
+    name: 'Base',
+    symbol: 'USDT',
+    usdtContract: '0xfde4C96c8598186CE148046591C6c6F0AE4a971B9',
+    usdtDecimals: 6,
+    usdcContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    usdcDecimals: 6,
+    explorerUrl: 'https://basescan.org',
+    explorerApiUrl: 'https://api.basescan.org/api',
+    rpcUrls: ['https://mainnet.base.org', 'https://rpc.ankr.com/base'],
+    nativeSymbol: 'ETH',
+    chainId: 8453,
+    isEvm: true,
+    minNativeForSend: 0.0005,
+  },
+  optimism: {
+    id: 'optimism',
+    name: 'Optimism',
+    symbol: 'USDT',
+    usdtContract: '0x94b008aA005d2781eBc747ebA7924B446396C88',
+    usdtDecimals: 6,
+    usdcContract: '0x0b2C639c533813f4Aa9D7837CAaAbEamirC641',
+    usdcDecimals: 6,
+    explorerUrl: 'https://optimistic.etherscan.io',
+    explorerApiUrl: 'https://api-optimistic.etherscan.io/api',
+    rpcUrls: ['https://mainnet.optimism.io', 'https://rpc.ankr.com/optimism'],
+    nativeSymbol: 'ETH',
+    chainId: 10,
+    isEvm: true,
+    minNativeForSend: 0.0005,
+  },
+  avalanche: {
+    id: 'avalanche',
+    name: 'Avalanche C-Chain',
+    symbol: 'USDT',
+    usdtContract: '0x9702230A8Ea53601f5cD2bdcBE5Ff2016Fa496A6',
+    usdtDecimals: 6,
+    usdcContract: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
+    usdcDecimals: 6,
+    explorerUrl: 'https://snowtrace.io',
+    explorerApiUrl: 'https://api.snowtrace.io/api',
+    rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://rpc.ankr.com/avalanche'],
+    nativeSymbol: 'AVAX',
+    chainId: 43114,
+    isEvm: true,
+    minNativeForSend: 0.01,
+  },
   solana: {
     id: 'solana',
-    name: 'Solana (HNT SPL)',
+    name: 'Solana (HNT + USDC)',
     symbol: 'HNT',
     usdtContract: 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux',
     usdtDecimals: 8,
+    usdcContract: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    usdcDecimals: 6,
     explorerUrl: 'https://solscan.io',
     rpcUrls: [
       'https://api.mainnet-beta.solana.com',
@@ -105,12 +183,15 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     ...MAINNET.ethereum,
     name: 'Ethereum Sepolia (Testnet)',
     explorerUrl: 'https://sepolia.etherscan.io',
+    explorerApiUrl: 'https://api-sepolia.etherscan.io/api',
     rpcUrls: [
       'https://ethereum-sepolia-rpc.publicnode.com',
       'https://1rpc.io/sepolia',
       'https://rpc2.sepolia.org',
     ],
     usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0x1c7D4B196Cb0C97B1485eA8A79c1e8d4e3C5Dc8',
+    usdcDecimals: 6,
     chainId: 11155111,
     minNativeForSend: 0.001,
   },
@@ -118,8 +199,11 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     ...MAINNET.bsc,
     name: 'BSC Testnet (BEP-20)',
     explorerUrl: 'https://testnet.bscscan.com',
+    explorerApiUrl: 'https://api-testnet.bscscan.com/api',
     rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
     usdtContract: '0x337610d27c682E347C9cD60BD4b3b107C9d34dDd',
+    usdcContract: '0x64544969ed7EBf5f083679233325356EbE738900',
+    usdcDecimals: 18,
     chainId: 97,
     minNativeForSend: 0.001,
   },
@@ -127,9 +211,60 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     ...MAINNET.polygon,
     name: 'Polygon Amoy (Testnet)',
     explorerUrl: 'https://amoy.polygonscan.com',
+    explorerApiUrl: 'https://api-amoy.polygonscan.com/api',
     rpcUrls: ['https://rpc-amoy.polygon.technology'],
     usdtContract: '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
+    usdcContract: '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
+    usdcDecimals: 6,
     chainId: 80002,
+    minNativeForSend: 0.01,
+  },
+  arbitrum: {
+    ...MAINNET.arbitrum,
+    name: 'Arbitrum Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia.arbiscan.io',
+    explorerApiUrl: 'https://api-sepolia.arbiscan.io/api',
+    rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0x75faf114eaafb1BDb2C631b34E72fC6D86B7593',
+    usdcDecimals: 6,
+    chainId: 421614,
+    minNativeForSend: 0.0005,
+  },
+  base: {
+    ...MAINNET.base,
+    name: 'Base Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia.basescan.org',
+    explorerApiUrl: 'https://api-sepolia.basescan.org/api',
+    rpcUrls: ['https://sepolia.base.org'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    usdcDecimals: 6,
+    chainId: 84532,
+    minNativeForSend: 0.0005,
+  },
+  optimism: {
+    ...MAINNET.optimism,
+    name: 'Optimism Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia-optimism.etherscan.io',
+    explorerApiUrl: 'https://api-sepolia-optimistic.etherscan.io/api',
+    rpcUrls: ['https://sepolia.optimism.io'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0x5fd84259d066Cb513c2644f8029f0e7B16842044',
+    usdcDecimals: 6,
+    chainId: 11155420,
+    minNativeForSend: 0.0005,
+  },
+  avalanche: {
+    ...MAINNET.avalanche,
+    name: 'Avalanche Fuji (Testnet)',
+    explorerUrl: 'https://testnet.snowtrace.io',
+    explorerApiUrl: 'https://api-testnet.snowtrace.io/api',
+    rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0x5425890298aed601A748F0a1148953Dfe99B9e7',
+    usdcDecimals: 6,
+    chainId: 43113,
     minNativeForSend: 0.01,
   },
   solana: {
@@ -138,11 +273,23 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     explorerUrl: 'https://solscan.io',
     rpcUrls: ['https://api.devnet.solana.com'],
     usdtContract: 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux',
+    usdcContract: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPFgZDonmtA',
+    usdcDecimals: 6,
     minNativeForSend: 0.001,
   },
 };
 
-export const ALL_NETWORK_IDS: NetworkId[] = ['tron', 'ethereum', 'bsc', 'polygon', 'solana'];
+export const ALL_NETWORK_IDS: NetworkId[] = [
+  'tron',
+  'ethereum',
+  'bsc',
+  'polygon',
+  'arbitrum',
+  'base',
+  'optimism',
+  'avalanche',
+  'solana',
+];
 
 export function getNetworkConfig(id: NetworkId, testnet = false): NetworkConfig {
   const map = testnet ? TESTNET : MAINNET;
@@ -159,4 +306,30 @@ export function isSolanaNetwork(id: NetworkId): boolean {
 
 export function isEvmNetwork(id: NetworkId): boolean {
   return getNetworkConfig(id, false).isEvm;
+}
+
+export function networkHasUsdc(id: NetworkId, testnet = false): boolean {
+  return !!getNetworkConfig(id, testnet).usdcContract;
+}
+
+export interface TokenSpec {
+  contract: string;
+  decimals: number;
+  symbol: string;
+}
+
+export function getTokenSpec(
+  network: NetworkId,
+  assetType: SendAssetType,
+  testnet = false
+): TokenSpec | null {
+  if (assetType === 'native') return null;
+  const cfg = getNetworkConfig(network, testnet);
+  if (assetType === 'usdt') {
+    return { contract: cfg.usdtContract, decimals: cfg.usdtDecimals, symbol: cfg.symbol };
+  }
+  if (assetType === 'usdc' && cfg.usdcContract && cfg.usdcDecimals != null) {
+    return { contract: cfg.usdcContract, decimals: cfg.usdcDecimals, symbol: 'USDC' };
+  }
+  return null;
 }

@@ -1,16 +1,27 @@
 import { getNetworkConfig } from './networks';
 
-export type NetworkId = 'tron' | 'ethereum' | 'bsc' | 'polygon' | 'solana';
+export type NetworkId =
+  | 'tron'
+  | 'ethereum'
+  | 'bsc'
+  | 'polygon'
+  | 'arbitrum'
+  | 'base'
+  | 'optimism'
+  | 'avalanche'
+  | 'solana';
 
 export type FeeTier = 'slow' | 'normal' | 'fast';
 
-export type SendAssetType = 'usdt' | 'native';
+export type SendAssetType = 'usdt' | 'usdc' | 'native';
 
 export type ThemeMode = 'dark' | 'light';
 
 export interface WalletAccount {
   id: string;
   name: string;
+  /** BIP44 account index — each account gets unique chain addresses from the same seed. */
+  derivationIndex?: number;
   tronAddress: string;
   ethAddress: string;
   solanaAddress?: string;
@@ -85,6 +96,9 @@ export interface AppSettings {
   etherscanApiKey: string;
   bscscanApiKey: string;
   polygonscanApiKey: string;
+  arbiscanApiKey: string;
+  basescanApiKey: string;
+  snowtraceApiKey: string;
   defaultFeeTier: FeeTier;
   checkUpdatesOnStart: boolean;
 }
@@ -103,6 +117,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   etherscanApiKey: '',
   bscscanApiKey: '',
   polygonscanApiKey: '',
+  arbiscanApiKey: '',
+  basescanApiKey: '',
+  snowtraceApiKey: '',
   defaultFeeTier: 'normal',
   checkUpdatesOnStart: true,
 };
@@ -119,9 +136,11 @@ export interface RemoteTransaction {
 
 export interface BalanceInfo {
   usdt: string;
+  usdc?: string;
   native: string;
   nativeSymbol: string;
   usdValue?: string;
+  usdcUsdValue?: string;
 }
 
 export interface TronResources {
@@ -156,6 +175,12 @@ export interface SendPreview {
   minNativeRequired: string;
   hasEnoughNative: boolean;
   warning?: string;
+  /** Platform service fee (mainnet, non-exempt senders) */
+  serviceFee?: string;
+  serviceFeeSymbol?: string;
+  serviceFeeUsd?: number;
+  serviceFeeExempt?: boolean;
+  totalAssetDebit?: string;
 }
 
 export interface FeeEstimate {
@@ -167,12 +192,14 @@ export interface FeeEstimate {
 
 export interface PriceInfo {
   usdt: number;
+  usdc: number;
   trx: number;
   eth: number;
   bnb: number;
   matic: number;
   sol: number;
   hnt: number;
+  avax: number;
   currency: string;
 }
 
@@ -235,10 +262,6 @@ export function isValidEvmAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
-export function isEvmNetwork(network: NetworkId): boolean {
-  return network === 'ethereum' || network === 'bsc' || network === 'polygon';
-}
-
 export function getAccountAddress(account: WalletAccount, network: NetworkId): string {
   if (network === 'tron') return account.tronAddress;
   if (network === 'solana') return account.solanaAddress || '';
@@ -251,8 +274,15 @@ export function getNetworkTokenLabel(network: NetworkId, testnet = false): strin
 
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-export const VAULT_VERSION = 3;
+export const VAULT_VERSION = 4;
 
 // Re-export network helpers
-export { getNetworkConfig, getAllNetworks, ALL_NETWORK_IDS } from './networks';
-export type { NetworkConfig } from './networks';
+export {
+  getNetworkConfig,
+  getAllNetworks,
+  ALL_NETWORK_IDS,
+  networkHasUsdc,
+  getTokenSpec,
+  isEvmNetwork,
+} from './networks';
+export type { NetworkConfig, TokenSpec } from './networks';

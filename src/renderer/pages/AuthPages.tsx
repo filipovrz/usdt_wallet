@@ -20,10 +20,6 @@ export function WelcomePage() {
     void refreshSession();
   }, [refreshSession]);
 
-  if (session.hasVault) {
-    return <Navigate to="/unlock" replace />;
-  }
-
   return (
 
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-surface-900 via-surface-800 to-brand-900/20 p-6">
@@ -48,29 +44,49 @@ export function WelcomePage() {
 
         <Card className="space-y-4">
 
-          <Link to="/create">
+          {session.hasVault ? (
+            <>
+              <Link to="/unlock">
+                <Button className="w-full" variant="primary">
+                  <Wallet size={18} />
+                  {t.unlock}
+                </Button>
+              </Link>
 
-            <Button className="w-full" variant="primary">
+              <p className="text-center text-xs text-gray-500">{t.vaultAlreadyExists}</p>
 
-              <Wallet size={18} />
+              <div className="grid grid-cols-2 gap-3">
+                <Link to="/create">
+                  <Button className="w-full" variant="secondary">
+                    <Wallet size={18} />
+                    {t.createWallet}
+                  </Button>
+                </Link>
+                <Link to="/import">
+                  <Button className="w-full" variant="secondary">
+                    <Import size={18} />
+                    {t.importWallet}
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to="/create">
+                <Button className="w-full" variant="primary">
+                  <Wallet size={18} />
+                  {t.createWallet}
+                </Button>
+              </Link>
 
-              {t.createWallet}
-
-            </Button>
-
-          </Link>
-
-          <Link to="/import">
-
-            <Button className="w-full" variant="secondary">
-
-              <Import size={18} />
-
-              {t.importWallet}
-
-            </Button>
-
-          </Link>
+              <Link to="/import">
+                <Button className="w-full" variant="secondary">
+                  <Import size={18} />
+                  {t.importWallet}
+                </Button>
+              </Link>
+            </>
+          )}
 
         </Card>
 

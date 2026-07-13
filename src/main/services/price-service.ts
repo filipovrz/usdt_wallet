@@ -2,12 +2,14 @@ import type { PriceInfo, AppSettings } from '../../shared/types';
 
 const COINGECKO_IDS: Record<string, string> = {
   usdt: 'tether',
+  usdc: 'usd-coin',
   trx: 'tron',
   eth: 'ethereum',
   bnb: 'binancecoin',
   matic: 'matic-network',
   sol: 'solana',
   hnt: 'helium',
+  avax: 'avalanche-2',
 };
 
 export class PriceService {
@@ -29,12 +31,14 @@ export class PriceService {
 
       const price: PriceInfo = {
         usdt: data[COINGECKO_IDS.usdt]?.[vs] ?? 1,
+        usdc: data[COINGECKO_IDS.usdc]?.[vs] ?? 1,
         trx: data[COINGECKO_IDS.trx]?.[vs] ?? 0,
         eth: data[COINGECKO_IDS.eth]?.[vs] ?? 0,
         bnb: data[COINGECKO_IDS.bnb]?.[vs] ?? 0,
         matic: data[COINGECKO_IDS.matic]?.[vs] ?? 0,
         sol: data[COINGECKO_IDS.sol]?.[vs] ?? 0,
         hnt: data[COINGECKO_IDS.hnt]?.[vs] ?? 0,
+        avax: data[COINGECKO_IDS.avax]?.[vs] ?? 0,
         currency: settings.currency,
       };
       this.cache = { data: price, ts: Date.now() };
@@ -42,12 +46,14 @@ export class PriceService {
     } catch {
       return {
         usdt: 1,
+        usdc: 1,
         trx: 0,
         eth: 0,
         bnb: 0,
         matic: 0,
         sol: 0,
         hnt: 0,
+        avax: 0,
         currency: settings.currency,
       };
     }

@@ -2,7 +2,17 @@ import { z } from 'zod';
 import { ALL_NETWORK_IDS } from './networks';
 import type { NetworkId } from './types';
 
-export const networkIdSchema = z.enum(['tron', 'ethereum', 'bsc', 'polygon', 'solana']);
+export const networkIdSchema = z.enum([
+  'tron',
+  'ethereum',
+  'bsc',
+  'polygon',
+  'arbitrum',
+  'base',
+  'optimism',
+  'avalanche',
+  'solana',
+]);
 
 export const createWalletSchema = z.object({
   name: z.string().min(1).max(64),
@@ -26,7 +36,7 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 
-export const sendAssetTypeSchema = z.enum(['usdt', 'native']);
+export const sendAssetTypeSchema = z.enum(['usdt', 'usdc', 'native']);
 
 export const sendSchema = z.object({
   accountId: z.string().uuid(),
@@ -59,6 +69,9 @@ export const settingsSchema = z.object({
   etherscanApiKey: z.string().max(256),
   bscscanApiKey: z.string().max(256),
   polygonscanApiKey: z.string().max(256),
+  arbiscanApiKey: z.string().max(256),
+  basescanApiKey: z.string().max(256),
+  snowtraceApiKey: z.string().max(256),
   defaultFeeTier: z.enum(['slow', 'normal', 'fast']),
   checkUpdatesOnStart: z.boolean(),
 });

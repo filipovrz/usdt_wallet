@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Usb, Plus, Trash2 } from 'lucide-react';
+import { Shield, Usb, Plus, Trash2, Pencil } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { Button, Card, Input, ErrorAlert, SuccessAlert } from '../components/ui';
 import type { MultisigPolicy, NetworkId } from '@shared/types';
@@ -89,7 +89,7 @@ export function BackupPage() {
 }
 
 export function SettingsPage() {
-  const { t, settings, setLang, lang, refreshSession, session } = useWallet();
+  const { t, settings, setLang, lang, refreshSession, session, activeAccount, setActiveAccount } = useWallet();
   const notify = useNotify();
   const [local, setLocal] = useState(settings);
   const [saved, setSaved] = useState(false);
@@ -98,8 +98,15 @@ export function SettingsPage() {
   const [pwdNew, setPwdNew] = useState('');
   const [pwdMsg, setPwdMsg] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [updateMsg, setUpdateMsg] = useState('');
   const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const acc of session.accounts) next[acc.id] = acc.name;
+    setAccountNames(next);
+  }, [session.accounts]);
 
   const handleSave = async () => {
     const res = await window.walletApi.updateSettings(local);
@@ -138,12 +145,47 @@ export function SettingsPage() {
   };
 
   const handleAddAccount = async () => {
-    if (!newAccountName) return;
-    const res = await window.walletApi.addAccount(newAccountName);
+    if (!newAccountName.trim()) {
+      notify.warning(notify.t.toast.accountNameRequired);
+      return;
+    }
+    const res = await window.walletApi.addAccount(newAccountName.trim());
     if (res.success) {
       setNewAccountName('');
       await refreshSession();
       notify.success(notify.t.toast.accountAdded);
+    } else {
+      notify.apiError(res.error);
+    }
+  };
+
+  const handleRenameAccount = async (accountId: string) => {
+    const name = (accountNames[accountId] || '').trim();
+    if (!name) {
+      notify.warning(notify.t.toast.accountNameRequired);
+      return;
+    }
+    const res = await window.walletApi.renameAccount(accountId, name);
+    if (res.success) {
+      await refreshSession();
+      if (activeAccount?.id === accountId && res.data) setActiveAccount(res.data);
+      notify.success(notify.t.toast.accountRenamed);
+    } else {
+      notify.apiError(res.error);
+    }
+  };
+
+  const handleRemoveAccount = async (accountId: string, accountName: string) => {
+    const msg = t.confirmRemoveAccount.replace('{name}', accountName);
+    if (!confirm(msg)) return;
+    const res = await window.walletApi.removeAccount(accountId);
+    if (res.success) {
+      const updated = await refreshSession();
+      if (activeAccount?.id === accountId) {
+        const first = updated?.accounts[0];
+        if (first) setActiveAccount(first);
+      }
+      notify.success(notify.t.toast.accountRemoved);
     } else {
       notify.apiError(res.error);
     }
@@ -221,11 +263,62 @@ export function SettingsPage() {
         <Input label="Etherscan API Key" value={local.etherscanApiKey} onChange={(e) => setLocal({ ...local, etherscanApiKey: e.target.value })} />
         <Input label="BscScan API Key" value={local.bscscanApiKey} onChange={(e) => setLocal({ ...local, bscscanApiKey: e.target.value })} />
         <Input label="PolygonScan API Key" value={local.polygonscanApiKey} onChange={(e) => setLocal({ ...local, polygonscanApiKey: e.target.value })} />
+        <Input label="Arbiscan API Key" value={local.arbiscanApiKey} onChange={(e) => setLocal({ ...local, arbiscanApiKey: e.target.value })} />
+        <Input label="Basescan API Key" value={local.basescanApiKey} onChange={(e) => setLocal({ ...local, basescanApiKey: e.target.value })} />
+        <Input label="Snowtrace API Key (Avalanche)" value={local.snowtraceApiKey} onChange={(e) => setLocal({ ...local, snowtraceApiKey: e.target.value })} />
+        <p className="text-xs text-gray-500">
+          Optional — improve transaction history. Free keys from trongrid.io, etherscan.io, bscscan.com, polygonscan.com, arbiscan.io, basescan.org, snowtrace.io. Optimism uses Etherscan key.
+        </p>
         <Button variant="secondary" onClick={handleSaveApiKeys}>Save API keys</Button>
       </Card>
 
       <Card className="max-w-lg space-y-4">
         <h2 className="font-semibold">Accounts ({session.accounts.length})</h2>
+        <ul className="space-y-3 text-sm">
+          {session.accounts.map((acc) => (
+            <li key={acc.id} className="rounded-lg border border-surface-600 bg-surface-800/50 px-3 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  className="min-w-[180px] flex-1"
+                  value={accountNames[acc.id] ?? acc.name}
+                  onChange={(e) =>
+                    setAccountNames({ ...accountNames, [acc.id]: e.target.value })
+                  }
+                />
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => handleRenameAccount(acc.id)}
+                  title={t.renameAccount}
+                >
+                  <Pencil size={14} />
+                  {t.saveAccountName}
+                </Button>
+                {session.accounts.length > 1 && (
+                  <Button
+                    variant="danger"
+                    type="button"
+                    onClick={() => handleRemoveAccount(acc.id, acc.name)}
+                    title={t.removeAccount}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                )}
+              </div>
+              <p className="mt-2 break-all font-mono text-xs text-gray-500">
+                <span className="text-gray-400">TRON:</span> {acc.tronAddress}
+              </p>
+              <p className="mt-1 break-all font-mono text-xs text-gray-500">
+                <span className="text-gray-400">ETH:</span> {acc.ethAddress}
+              </p>
+              {acc.solanaAddress && (
+                <p className="mt-1 break-all font-mono text-xs text-gray-500">
+                  <span className="text-gray-400">SOL:</span> {acc.solanaAddress}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
         <div className="flex gap-2">
           <Input value={newAccountName} onChange={(e) => setNewAccountName(e.target.value)} placeholder="New account name" />
           <Button onClick={handleAddAccount}><Plus size={16} /></Button>

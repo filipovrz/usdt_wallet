@@ -7,16 +7,16 @@ export interface HelpSection {
 export const helpContent = {
   bg: {
     pageTitle: 'Помощ и инструкции',
-    pageSubtitle: 'Пълен наръчник за ползване на USDT Wallet',
+    pageSubtitle: 'Пълен наръчник за ползване на EvtinkoWallet',
     toc: 'Съдържание',
     versionLabel: 'Версия',
     changelog: 'История на версиите',
     sections: [
       {
         id: 'intro',
-        title: '1. Какво е USDT Wallet?',
+        title: '1. Какво е EvtinkoWallet?',
         content: [
-          'USDT Wallet е некастодиален (non-custodial) desktop портфейл — вие държите ключовете, не ние.',
+          'EvtinkoWallet е некастодиален (non-custodial) desktop портфейл — вие държите ключовете, не ние.',
           'Поддържа USDT на TRON, Ethereum, BSC и Polygon, плюс Solana (HNT SPL + SOL).',
           'Приложението работи изцяло локално. Няма cloud акаунт, няма телеметрия.',
           'Private keys и seed фразата никога не напускат компютъра ви.',
@@ -26,10 +26,10 @@ export const helpContent = {
         id: 'install',
         title: '2. Инсталация и стартиране',
         content: [
-          'Windows: стартирайте „USDT Wallet Setup X.X.X.exe“ от папка release/.',
-          'След инсталация: Desktop shortcut или Start Menu → USDT Wallet.',
+          'Windows: стартирайте „EvtinkoWallet Setup X.X.X.exe“ от папка release/.',
+          'След инсталация: Desktop shortcut или Start Menu → EvtinkoWallet.',
           'Development: npm install → npm run electron:dev в папката на проекта.',
-          'Деинсталация: Control Panel → Programs → USDT Wallet → Uninstall (изтрива и app data).',
+          'Деинсталация: Control Panel → Programs → EvtinkoWallet → Uninstall (изтрива и app data).',
         ],
       },
       {
@@ -85,9 +85,11 @@ export const helpContent = {
           'ERC-20 (Ethereum): по-високи gas такси. Contract: 0xdAC17F958D2ee523a2206206994597C13D831ec7',
           'BEP-20 (BSC): 0x55d398326f99059fF775485246999027B3197955',
           'Polygon: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+          'Arbitrum / Base / Optimism: USDT + USDC + native ETH (EVM същият адрес).',
+          'Avalanche C-Chain: USDT + USDC + native AVAX.',
           'Solana HNT (SPL): hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux — native SOL за такси.',
           'USDT/HNT на различни мрежи НЕ са взаимозаменяеми — грешна мрежа = загубени средства.',
-          'Testnet: Shasta, Sepolia, BSC/Polygon testnet, Solana Devnet — включете в Settings.',
+          'Testnet: Shasta, Sepolia, BSC/Polygon/Arbitrum/Base/Optimism/Avalanche Fuji, Solana Devnet — включете в Settings.',
         ],
       },
       {
@@ -138,7 +140,7 @@ export const helpContent = {
           'Auto-lock минути: 1–120 (препоръка: 5).',
           'Скрий баланси: за privacy на публични места.',
           'Потвърждение преди изпращане: преглед преди final confirm.',
-          'API keys: TronGrid, Etherscan, BscScan, PolygonScan — за по-надеждна история.',
+          'API keys: TronGrid, Etherscan, BscScan, PolygonScan, Arbiscan, Basescan, Snowtrace — за по-надеждна история (Optimism ползва Etherscan).',
           'Theme: Dark/Light. Offline mode: само преглед без RPC.',
           'Check for updates: проверка, изтегляне и инсталация на нова версия.',
           'Изтрий портфейл: необратимо — само ако имате seed backup!',
@@ -165,8 +167,21 @@ export const helpContent = {
         ],
       },
       {
+        id: 'service-fee',
+        title: '15. Service fee (mainnet)',
+        content: [
+          'EvtinkoWallet начислява малка service fee при изпращане на mainnet (не на testnet).',
+          'Размер: 0.25% от сумата, минимум ~$0.01, максимум ~$1.00 (USD еквивалент).',
+          'Важи за USDT, USDC и native изпращания (TRX, ETH, SOL и др.).',
+          'Таксата се показва в Preview преди потвърждение — не е скрита.',
+          'Разработчикът/собственикът на портфейла (owner wallet) е освободен от service fee.',
+          'Testnet mode: без service fee — за безплатни тестове.',
+          'Service fee е отделна от blockchain gas/network fee.',
+        ],
+      },
+      {
         id: 'troubleshooting',
-        title: '15. Отстраняване на проблеми',
+        title: '16. Отстраняване на проблеми',
         content: [
           '„INVALID_PASSWORD“ — грешна парола или vault повреден.',
           '„INVALID_ADDRESS“ — адресът не отговаря на избраната мрежа.',
@@ -178,7 +193,7 @@ export const helpContent = {
       },
       {
         id: 'testing',
-        title: '16. Как да тествате сами',
+        title: '17. Как да тествате сами',
         content: [
           'Testnet (безплатно): Settings → Testnet mode → Запази.',
           'TRON Shasta: faucet https://shasta.tronex.io/join/getJoinPage (не tronscan faucet — 404).',
@@ -194,16 +209,16 @@ export const helpContent = {
   },
   en: {
     pageTitle: 'Help & User Guide',
-    pageSubtitle: 'Complete guide for using USDT Wallet',
+    pageSubtitle: 'Complete guide for using EvtinkoWallet',
     toc: 'Contents',
     versionLabel: 'Version',
     changelog: 'Version history',
     sections: [
       {
         id: 'intro',
-        title: '1. What is USDT Wallet?',
+        title: '1. What is EvtinkoWallet?',
         content: [
-          'USDT Wallet is a non-custodial desktop wallet — you hold the keys, not us.',
+          'EvtinkoWallet is a non-custodial desktop wallet — you hold the keys, not us.',
           'Supports USDT on TRON, Ethereum, BSC, and Polygon, plus Solana (HNT SPL + SOL).',
           'The app runs entirely locally. No cloud account, zero telemetry.',
           'Private keys and seed phrase never leave your computer.',
@@ -213,10 +228,10 @@ export const helpContent = {
         id: 'install',
         title: '2. Installation & launch',
         content: [
-          'Windows: run "USDT Wallet Setup X.X.X.exe" from the release/ folder.',
-          'After install: Desktop shortcut or Start Menu → USDT Wallet.',
+          'Windows: run "EvtinkoWallet Setup X.X.X.exe" from the release/ folder.',
+          'After install: Desktop shortcut or Start Menu → EvtinkoWallet.',
           'Development: npm install → npm run electron:dev in the project folder.',
-          'Uninstall: Control Panel → Programs → USDT Wallet → Uninstall (deletes app data).',
+          'Uninstall: Control Panel → Programs → EvtinkoWallet → Uninstall (deletes app data).',
         ],
       },
       {
@@ -234,7 +249,7 @@ export const helpContent = {
         title: '4. Dashboard',
         content: [
           'Shows token balance (USDT or HNT), native balance (TRX/ETH/BNB/MATIC/SOL), and USD value.',
-          'Switch between TRON, Ethereum, BSC, Polygon, and Solana with network buttons.',
+          'Switch between TRON, Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche, and Solana with network buttons.',
           'TRON: energy/bandwidth indicator. Testnet mode in Settings.',
           '"Refresh" loads current balances from the blockchain.',
         ],
@@ -272,9 +287,11 @@ export const helpContent = {
           'ERC-20 (Ethereum): higher gas fees. Contract: 0xdAC17F958D2ee523a2206206994597C13D831ec7',
           'BEP-20 (BSC): 0x55d398326f99059fF775485246999027B3197955',
           'Polygon: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+          'Arbitrum / Base / Optimism: USDT + USDC + native ETH (same EVM address).',
+          'Avalanche C-Chain: USDT + USDC + native AVAX.',
           'Solana HNT (SPL): hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux — native SOL for fees.',
           'USDT/HNT on different networks is NOT interchangeable — wrong network = lost funds.',
-          'Testnet: Shasta, Sepolia, BSC/Polygon testnet, Solana Devnet — enable in Settings.',
+          'Testnet: Shasta, Sepolia, BSC/Polygon/Arbitrum/Base/Optimism/Avalanche Fuji, Solana Devnet — enable in Settings.',
         ],
       },
       {
@@ -325,7 +342,7 @@ export const helpContent = {
           'Auto-lock minutes: 1–120 (recommended: 5).',
           'Hide balances: for privacy in public places.',
           'Confirm before send: preview step before final confirm.',
-          'API keys: TronGrid, Etherscan, BscScan, PolygonScan — for reliable history.',
+          'API keys: TronGrid, Etherscan, BscScan, PolygonScan, Arbiscan, Basescan, Snowtrace — for reliable history (Optimism uses Etherscan).',
           'Theme: Dark/Light. Offline mode: view-only without RPC.',
           'Check for updates: check, download, and install new versions.',
           'Delete wallet: irreversible — only if you have seed backup!',
@@ -352,8 +369,21 @@ export const helpContent = {
         ],
       },
       {
+        id: 'service-fee',
+        title: '15. Service fee (mainnet)',
+        content: [
+          'EvtinkoWallet charges a small service fee on mainnet sends (not on testnet).',
+          'Rate: 0.25% of amount, minimum ~$0.01, maximum ~$1.00 (USD equivalent).',
+          'Applies to USDT, USDC, and native sends (TRX, ETH, SOL, etc.).',
+          'The fee is shown in Preview before you confirm — never hidden.',
+          'The wallet owner (developer wallet) is exempt from the service fee.',
+          'Testnet mode: no service fee — for free testing.',
+          'Service fee is separate from blockchain gas/network fees.',
+        ],
+      },
+      {
         id: 'troubleshooting',
-        title: '15. Troubleshooting',
+        title: '16. Troubleshooting',
         content: [
           '"INVALID_PASSWORD" — wrong password or corrupted vault.',
           '"INVALID_ADDRESS" — address does not match selected network.',
@@ -365,7 +395,7 @@ export const helpContent = {
       },
       {
         id: 'testing',
-        title: '16. How to test yourself',
+        title: '17. How to test yourself',
         content: [
           'Testnet (free): Settings → Testnet mode → Save.',
           'TRON Shasta: https://shasta.tronex.io/join/getJoinPage (not tronscan faucet — 404).',

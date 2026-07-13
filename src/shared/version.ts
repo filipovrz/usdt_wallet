@@ -1,22 +1,61 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '2.2.2';
+export const APP_VERSION = '2.5.0';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
 
 /** Optional JSON manifest: { "version": "2.1.0", "notes": "..." } */
+const ENV = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 export const UPDATE_MANIFEST_URL =
-  process.env.UPDATE_MANIFEST_URL ||
+  ENV?.UPDATE_MANIFEST_URL ||
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
   {
+    version: '2.5.0',
+    date: '2026-07-14',
+    changes: [
+      'Optimism + Avalanche C-Chain (USDT/USDC + native)',
+      'API keys: Arbiscan, Basescan, Snowtrace (+ Optimism via Etherscan)',
+      'Account rename/remove, service fee owner config',
+    ],
+  },
+  {
+    version: '2.4.0',
+    date: '2026-07-14',
+    changes: [
+      'Service fee 0.25% (min $0.01, max $1) на mainnet send',
+      'Owner wallet exempt; testnet без такса',
+      'Preview + Help секция Service fee',
+    ],
+  },
+  {
+    version: '2.3.1',
+    date: '2026-07-13',
+    changes: [
+      'Rebrand: USDT Wallet → EvtinkoWallet (UI, installer, Help)',
+      'Production: CSP в release, dev-only diagnostics, NSIS installer',
+      '7 мрежи: TRON, ETH, BSC, Polygon, Arbitrum, Base, Solana',
+    ],
+  },
+  {
+    version: '2.3.0',
+    date: '2026-07-13',
+    changes: [
+      'USDC на Ethereum, BSC, Polygon и Solana',
+      'Нови мрежи: Arbitrum One и Base (USDT + USDC + ETH)',
+      'Dashboard и Send: USDC баланс и изпращане',
+    ],
+  },
+  {
     version: '2.2.2',
     date: '2026-07-13',
     changes: [
-      'EVM address live от seed + ethAddress backfill',
-      'Receive: 42/42 символа, TRON self-send блок',
-      'restart-wallet.ps1, Sepolia faucet help',
+      'Multi-account derivation — уникални TRON/ETH/SOL адреси (vault v4)',
+      'Welcome: Отключи + Създай + Импортирай; ETH в описанието',
+      'Send: toast по asset, account selector, self-send блок за всички мрежи',
+      'Settings: TRON/ETH/SOL адреси; hint при празно име на акаунт',
+      'EVM address live от seed, Receive 42/42, dev black-screen fix',
     ],
   },
   {

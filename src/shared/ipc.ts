@@ -18,6 +18,8 @@ export const IPC_CHANNELS = {
   UPDATE_SETTINGS: 'wallet:update-settings',
   CHANGE_PASSWORD: 'wallet:change-password',
   ADD_ACCOUNT: 'wallet:add-account',
+  RENAME_ACCOUNT: 'wallet:rename-account',
+  REMOVE_ACCOUNT: 'wallet:remove-account',
   EXPORT_VAULT: 'wallet:export-vault',
   EXPORT_BACKUP: 'wallet:export-backup',
   DELETE_VAULT: 'wallet:delete-vault',

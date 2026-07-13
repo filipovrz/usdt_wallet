@@ -1,15 +1,15 @@
-# USDT Wallet
+# EvtinkoWallet
 
 **Repository:** [github.com/filipovrz/usdt_wallet](https://github.com/filipovrz/usdt_wallet)
 
-Професионален **некастодиален** desktop портфейл — **USDT** (TRC-20 / ERC-20 / BEP-20), **native coins** (TRX, ETH, BNB, MATIC, SOL) и **HNT (Solana SPL)**.
+Професионален **некастодиален** desktop портфейл — **USDT**, **USDC**, **native coins** (TRX, ETH, BNB, MATIC, AVAX, SOL) и **HNT (Solana SPL)**.
 
-**Текуща версия: 2.2.1**
+**Текуща версия: 2.5.0** · Production-ready
 
 Вашите private keys и seed фраза **никога не напускат компютъра**. Нулева телеметрия.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/version-2.2.1-green)
+![Version](https://img.shields.io/badge/version-2.5.0-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -18,207 +18,124 @@
 
 | Функция | Описание |
 |---------|----------|
-| **Създаване / Import** | BIP39 seed (24 думи), парола за vault |
-| **TRC-20 USDT** | TRON mainnet — баланс, изпращане, история |
-| **ERC-20 USDT** | Ethereum mainnet — баланс, изпращане, история |
-| **Solana HNT + SOL** | HNT (SPL) и native SOL — баланс, изпращане, история |
-| **Native send** | TRX, ETH, BNB, MATIC, SOL |
-| **Dashboard** | Token + native баланс, превключване на мрежа |
-| **Send / Receive** | Preview, потвърждение, QR код |
-| **Address Book** | Контакти по мрежа |
-| **Backup** | Seed reveal с парола |
-| **Help** | 14-секционен наръчник BG/EN + test guide |
-| **Security** | Auto-lock, brute-force защита, IPC isolation |
-| **Settings** | BG/EN, auto-lock минути, default мрежа |
-| **Installer** | NSIS Windows installer с деинсталация |
-| **BSC / Polygon** | BEP-20 и Polygon USDT |
-| **Testnet** | Shasta, Sepolia, testnet BSC/Polygon, Solana Devnet |
-| **Multi-account** | Множество акаунти в един vault |
-| **Themes** | Dark / Light |
-| **Hardware** | Ledger USB scan + address; Trezor detection |
-| **Multi-Sig** | M-of-N policies + TRON on-chain deploy |
-| **Updates** | electron-updater check/download/install |
-| **Toast UX** | Известия за всички действия (success/error/info/warning) |
+| **9 мрежи** | TRON, Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche, Solana |
+| **Stablecoins** | USDT + USDC (където е налично) |
+| **Native send** | TRX, ETH, BNB, MATIC, AVAX, SOL |
+| **Service fee** | 0.25% mainnet send (min $0.01, max $1); изключен на testnet |
+| **Solana** | HNT (SPL) + USDC + SOL |
+| **Multi-account** | Уникални адреси per account (vault v4) |
+| **Testnet mode** | Shasta, Sepolia, BSC/Polygon/Arbitrum/Base/Optimism/Avalanche testnet, Solana Devnet |
+| **Security** | scrypt + AES-256-GCM vault, auto-lock, IPC isolation, CSP (production) |
+| **Hardware** | Ledger USB (TRON/EVM) |
+| **Updates** | electron-updater |
+| **Installer** | NSIS Windows — `EvtinkoWallet Setup X.X.X.exe` |
 | **Copyright** | © Evtinko Auctions |
 
 ---
 
 ## Сигурност
 
-```
-┌─────────────────────────────────────────┐
-│  Renderer (React UI)                    │
-│  • Няма достъп до keys/seed/RPC         │
-└─────────────────┬───────────────────────┘
-                  │ IPC (whitelisted + Zod)
-┌─────────────────▼───────────────────────┐
-│  Main Process                           │
-│  • scrypt + AES-256-GCM vault           │
-│  • BIP39/BIP32 key derivation           │
-│  • TronWeb + ethers signing             │
-└─────────────────────────────────────────┘
-```
-
-- **Vault:** `%APPDATA%/usdt-wallet/vault.enc.json` (Windows)
-- **KDF:** scrypt (N=16384, r=8, p=1) + AES-256-GCM
-- **Auto-lock:** 1–120 мин (default: 5)
-- **Lockout:** 5 грешни пароли → 15 мин блокиране
+- **Vault:** `%APPDATA%/usdt-wallet/vault.enc.json` (Windows) — пътят не се променя след rebrand
+- **KDF:** scrypt (N=16384) + AES-256-GCM
+- **Auto-lock:** 5 мин (default) · **Lockout:** 5 грешни пароли → 15 мин
+- **Production:** Content-Security-Policy, no dev diagnostics
 
 ---
 
 ## Изисквания
 
-- Node.js 18+ (препоръчително 20+)
+- Node.js 20+
 - npm 9+
 - Windows 10/11 (за NSIS installer)
 
 ---
 
-## Бърз старт
+## Development
 
 ```powershell
-cd "d:\Filipov Ne Pipai\Pgojects\usdt_wallet"
+cd "D:\Filipov Ne Pipai\Pgojects\usdt_wallet"
 npm install
 npm run electron:dev
-# Production (след build):
-npm run build
-powershell -ExecutionPolicy Bypass -File scripts/restart-wallet.ps1
 ```
 
 ---
 
-## Инсталация (Windows)
+## Production build (Windows)
 
 ```powershell
 $env:CSC_IDENTITY_AUTO_DISCOVERY='false'
 npm run electron:build:win
 ```
 
-→ `release/USDT Wallet Setup 2.1.0.exe`
+→ `release/EvtinkoWallet Setup 2.5.0.exe`
 
-- Desktop + Start Menu shortcut
-- Деинсталация от Control Panel (изтрива app data)
+- Desktop + Start Menu shortcut **EvtinkoWallet**
+- Деинсталация от Control Panel
 
 ---
 
-## Използване
+## Testnet тест
 
-1. **Първо стартиране** → Създай / Импортирай портфейл
-2. **Запиши seed фразата** офлайн (24 думи)
-3. **Отключи** с парола при следващи стартирания
-4. **Help** (sidebar → Помощ) — пълен наръчник
-5. **TRC-20:** дръж TRX за такси · **ERC-20:** дръж ETH за gas
-
-### Testnet тест (без реални пари)
-
-1. **Настройки** → включи **Testnet mode** → Запази
-2. **Получи** → копирай адреса за избраната мрежа
-3. Вземи test tokens от faucet:
+1. **Settings** → **Testnet mode** ON → Save
+2. **Receive** → копирай адрес
+3. Faucets:
 
 | Мрежа | Faucet |
 |-------|--------|
 | TRON Shasta | https://shasta.tronex.io/join/getJoinPage |
-| Ethereum Sepolia | https://faucets.chain.link/sepolia (без mainnet ETH) |
-| Solana Devnet | https://faucet.solana.com (GitHub login) |
+| Ethereum Sepolia | https://cloud.google.com/application/web3/faucet/ethereum/sepolia |
+| Solana Devnet (SOL) | https://faucet.solana.com |
+| Solana Devnet (USDC) | https://faucet.circle.com |
+| Arbitrum/Base/Optimism Sepolia | bridge / official faucets |
+| Avalanche Fuji | https://faucet.avax.network |
 
-4. **Табло** → Refresh → test send (Native TRX/ETH/SOL)
-5. След тестове: изключи Testnet mode
+4. **Dashboard** → Refresh → **Send** (native / USDC / USDT)
 
-⚠️ TRON Shasta: `shasta.tronscan.org/#/tools/faucet` **не работи** (404) — ползвай tronex.io.
-
-### Ръчен test mainnet (кратко)
-
-1. Получи → копирай TRC-20 адрес (T…)
-2. Изпрати малко USDT + ~15 TRX от exchange
-3. Dashboard → Обнови
-4. Изпрати 1 USDT обратно → History → Обнови
-
-*(Пълен guide: Help → секция 14)*
-
----
-
-## Поддържани контракти
-
-| Мрежа | USDT Contract |
-|-------|---------------|
-| TRON (TRC-20) | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` |
-| Ethereum (ERC-20) | `0xdAC17F958D2ee523a2206206994597C13D831ec7` |
-
----
-
-## RPC endpoints
-
-| Мрежа | Default RPC |
-|-------|-------------|
-| TRON | `https://api.trongrid.io` |
-| Ethereum | `https://ethereum.publicnode.com` |
-
-**Optional env vars:**
-```powershell
-$env:TRONGRID_API_KEY='...'   # за TronGrid rate limits
-$env:ETHERSCAN_API_KEY='...'  # за history API
-```
+⚠️ Solana Devnet: HNT mint е mainnet-only — тествай **SOL** и **USDC**.
 
 ---
 
 ## Тестване
 
 ```powershell
-npm test              # 9 unit tests
-npm run test:e2e      # Electron smoke test
-npm run test:live     # + blockchain RPC (интернет)
+npm test              # build + 9 unit tests
+npm run test:e2e      # Playwright smoke
+npm run test:live     # + live RPC
 ```
-
-Последен резултат: **9/9 unit ✓** · **E2E create-wallet ✓** (13.07.2026)
 
 ---
 
-## Версиониране
+## Версии
 
 | Версия | Промени |
 |--------|---------|
-| **2.2.1** | TRON address fix, create-wallet flow, session IPC, testnet RPC/checksum |
-| **2.2.0** | Solana SOL + HNT SPL, vault v3, CoinGecko SOL/HNT |
-| **2.0.0** | BSC/Polygon, testnet, multi-account, themes, CI |
-| **1.1.0** | Help меню, автоматични тестове, CHANGELOG |
-| **1.0.0** | Пълен портфейл + NSIS инсталатор |
+| **2.5.0** | Optimism, Avalanche, explorer API keys, account rename/remove |
+| **2.4.0** | Service fee (mainnet), owner wallet exempt |
+| **2.3.1** | EvtinkoWallet rebrand, production hardening, NSIS |
+| **2.3.0** | USDC, Arbitrum, Base |
+| **2.2.2** | Multi-account, Send/Welcome UX, dev stability |
+| **2.2.0** | Solana HNT + SOL |
 
-→ [CHANGELOG.md](./CHANGELOG.md)
-
----
-
-## Структура на проекта
-
-```
-src/
-├── main/          # Electron main — crypto, blockchain, vault
-├── preload/       # Secure API bridge
-├── renderer/      # React UI + Help
-└── shared/        # Types, IPC, version, validation
-scripts/
-└── run-tests.mjs  # Automated test suite
-```
+→ [CHANGELOG.md](./CHANGELOG.md) · [CHECKPOINT.md](./CHECKPOINT.md)
 
 ---
 
-## Документация
+## Структура
 
-| Файл | Описание |
-|------|----------|
-| [CHECKPOINT.md](./CHECKPOINT.md) | Технически checkpoint — какво е готово |
-| [CHAT_SAVE.md](./CHAT_SAVE.md) | Пълен сейф на AI разговора |
-| [CHANGELOG.md](./CHANGELOG.md) | История на версиите |
+```
+src/main/       Electron — crypto, blockchain, vault
+src/preload/    Secure IPC bridge
+src/renderer/   React UI
+src/shared/     Types, networks, version
+```
 
 ---
 
 ## Предупреждение
 
-⚠️ **Non-custodial** — вие пазите seed фразата и паролата.  
-⚠️ **Mainnet** — реални средства.  
-⚠️ **TRC-20 ≠ ERC-20** — проверявай мрежата преди изпращане.
+⚠️ **Non-custodial** — вие пазите seed и парола.  
+⚠️ **Mainnet** — реални средства. Проверявай мрежата преди изпращане.
 
 ---
-
-## Лиценз
 
 MIT · **© Evtinko Auctions**

@@ -6,8 +6,13 @@ import { TronWeb } from 'tronweb';
 
 import { deriveSolanaAddress } from '../crypto/solana-keys';
 
-const TRON_PATH = "m/44'/195'/0'/0/0";
-const ETH_PATH = "m/44'/60'/0'/0/0";
+function tronPath(accountIndex: number): string {
+  return `m/44'/195'/0'/0/${accountIndex}`;
+}
+
+function ethPath(accountIndex: number): string {
+  return `m/44'/60'/0'/0/${accountIndex}`;
+}
 
 function privateKeyToTronAddress(privateKeyHex: string): string {
   const address = TronWeb.address.fromPrivateKey(privateKeyHex.replace(/^0x/, ''));
@@ -49,12 +54,12 @@ export interface DerivedKeys {
   ethPrivateKey: string;
 }
 
-export function deriveKeysFromMnemonic(mnemonic: string, passphrase = ''): DerivedKeys {
+export function deriveKeysFromMnemonic(mnemonic: string, passphrase = '', accountIndex = 0): DerivedKeys {
   const seed = bip39.mnemonicToSeedSync(normalizeMnemonic(mnemonic), passphrase);
   const master = HDKey.fromMasterSeed(seed);
 
-  const tronNode = master.derive(TRON_PATH);
-  const ethNode = master.derive(ETH_PATH);
+  const tronNode = master.derive(tronPath(accountIndex));
+  const ethNode = master.derive(ethPath(accountIndex));
 
   if (!tronNode.privateKey || !ethNode.privateKey) {
     seed.fill(0);
@@ -65,7 +70,7 @@ export function deriveKeysFromMnemonic(mnemonic: string, passphrase = ''): Deriv
   const ethPrivateKey = bytesToHex(ethNode.privateKey);
   const tronAddress = privateKeyToTronAddress(tronPrivateKey);
   const ethWallet = new Wallet('0x' + ethPrivateKey);
-  const solanaAddress = deriveSolanaAddress(mnemonic, passphrase);
+  const solanaAddress = deriveSolanaAddress(mnemonic, passphrase, accountIndex);
 
   seed.fill(0);
 
@@ -81,16 +86,23 @@ export function deriveKeysFromMnemonic(mnemonic: string, passphrase = ''): Deriv
 export function getPrivateKeyForNetwork(
   mnemonic: string,
   network: 'tron' | 'ethereum' | 'bsc' | 'polygon',
-  passphrase = ''
+  passphrase = '',
+  accountIndex = 0
 ): string {
-  const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+  const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
   return network === 'tron' ? keys.tronPrivateKey : keys.ethPrivateKey;
 }
 
-export function createAccountFromMnemonic(name: string, mnemonic: string, passphrase = '') {
-  const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+export function createAccountFromMnemonic(
+  name: string,
+  mnemonic: string,
+  passphrase = '',
+  accountIndex = 0
+) {
+  const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
   return {
     name,
+    derivationIndex: accountIndex,
     tronAddress: keys.tronAddress,
     ethAddress: keys.ethAddress,
     solanaAddress: keys.solanaAddress,

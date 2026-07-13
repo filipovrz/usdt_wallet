@@ -1,4 +1,4 @@
-# USDT Wallet — restart helper (double-click or run from terminal)
+# EvtinkoWallet — restart helper (double-click or run from terminal)
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $exe = Join-Path $root 'node_modules\electron\dist\electron.exe'
 
@@ -13,4 +13,4 @@ Get-Process -Name 'electron' -ErrorAction SilentlyContinue |
 
 $env:NODE_ENV = 'production'
 Start-Process -FilePath $exe -ArgumentList '.' -WorkingDirectory $root -WindowStyle Normal
-Write-Host 'USDT Wallet started.'
+Write-Host 'EvtinkoWallet started.'

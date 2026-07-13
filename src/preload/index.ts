@@ -41,6 +41,10 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.CHANGE_PASSWORD, req),
   addAccount: (name: string): Promise<ApiResponse<WalletAccount>> =>
     ipcRenderer.invoke(IPC_CHANNELS.ADD_ACCOUNT, name),
+  renameAccount: (accountId: string, name: string): Promise<ApiResponse<WalletAccount>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RENAME_ACCOUNT, { accountId, name }),
+  removeAccount: (accountId: string): Promise<ApiResponse> =>
+    ipcRenderer.invoke(IPC_CHANNELS.REMOVE_ACCOUNT, accountId),
   getMnemonic: (password: string): Promise<ApiResponse<{ mnemonic: string; passphrase?: string }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_MNEMONIC, { password }),
   getBalance: (accountId: string, network: NetworkId): Promise<ApiResponse<BalanceInfo>> =>

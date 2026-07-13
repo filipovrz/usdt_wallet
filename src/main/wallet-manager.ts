@@ -31,6 +31,8 @@ import {
   type HardwareDevice,
   type HardwareAddressResult,
 } from '../shared/types';
+import { getNetworkConfig } from '../shared/networks';
+import { getAssetUsdPrice } from '../shared/service-fee';
 import {
   encryptVaultWithPassphrase,
   decryptVaultFull,
@@ -43,7 +45,6 @@ import {
   createAccountFromMnemonic,
   deriveKeysFromMnemonic,
 } from './crypto/keys';
-import { getNetworkConfig } from '../shared/networks';
 import { BlockchainService } from './services/blockchain';
 import { PriceService } from './services/price-service';
 import {
@@ -64,6 +65,16 @@ function migrateMeta(meta: VaultMeta): VaultMeta {
     multisigPolicies: meta.multisigPolicies || [],
     settings: { ...DEFAULT_SETTINGS, ...meta.settings },
     transactions: (meta.transactions || []).map((t) => ({ ...t })),
+    accounts: (meta.accounts || []).map((acc, index) => {
+      let name = acc.name;
+      if (name === 'Моят USDT портфейл') name = 'Моят портфейл';
+      if (name === 'My USDT wallet') name = 'My wallet';
+      return {
+        ...acc,
+        name,
+        derivationIndex: acc.derivationIndex ?? index,
+      };
+    }),
   };
 }
 
@@ -169,8 +180,10 @@ export class WalletManager {
   private getAccountsWithLiveAddresses(): WalletAccount[] {
     const accounts = this.meta?.accounts || [];
     if (!this.unlocked || !this.mnemonic) return accounts;
-    const keys = deriveKeysFromMnemonic(this.mnemonic, this.passphrase);
-    return accounts.map((acc) => this.applyDerivedKeys(acc, keys));
+    return accounts.map((acc) => {
+      const keys = deriveKeysFromMnemonic(this.mnemonic!, this.passphrase, acc.derivationIndex ?? 0);
+      return this.applyDerivedKeys(acc, keys);
+    });
   }
 
   private applyDerivedKeys(account: WalletAccount, keys: ReturnType<typeof deriveKeysFromMnemonic>): WalletAccount {
@@ -204,7 +217,8 @@ export class WalletManager {
   }
 
   private makeAccount(name: string, mnemonic: string, passphrase = ''): WalletAccount {
-    const base = createAccountFromMnemonic(name, mnemonic, passphrase);
+    const nextIndex = this.meta?.accounts.length ?? 0;
+    const base = createAccountFromMnemonic(name, mnemonic, passphrase, nextIndex);
     return { id: uuidv4(), ...base, createdAt: new Date().toISOString() };
   }
 
@@ -223,11 +237,13 @@ export class WalletManager {
   /** Re-derive chain addresses when vault metadata is stale or from an older wallet version. */
   private async backfillDerivedAddresses(mnemonic: string, passphrase: string): Promise<void> {
     if (!this.meta) return;
-    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
     let changed = false;
-    this.meta.accounts = this.meta.accounts.map((acc) => {
-      const next = this.applyDerivedKeys(acc, keys);
+    this.meta.accounts = this.meta.accounts.map((acc, index) => {
+      const derivationIndex = acc.derivationIndex ?? index;
+      const keys = deriveKeysFromMnemonic(mnemonic, passphrase, derivationIndex);
+      const next = this.applyDerivedKeys({ ...acc, derivationIndex }, keys);
       if (
+        next.derivationIndex !== acc.derivationIndex ||
         next.tronAddress !== acc.tronAddress ||
         next.ethAddress !== acc.ethAddress ||
         next.solanaAddress !== acc.solanaAddress
@@ -348,10 +364,35 @@ export class WalletManager {
 
   async addAccount(name: string): Promise<ApiResponse<WalletAccount>> {
     if (!this.unlocked || !this.meta || !this.mnemonic) return { success: false, error: 'LOCKED_WALLET' };
-    const account = this.makeAccount(name, this.mnemonic, this.passphrase);
+    const trimmed = name.trim();
+    if (!trimmed) return { success: false, error: 'ACCOUNT_NAME_REQUIRED' };
+    const account = this.makeAccount(trimmed, this.mnemonic, this.passphrase);
     this.meta.accounts.push(account);
     await this.persistMeta();
     return { success: true, data: account };
+  }
+
+  async renameAccount(accountId: string, name: string): Promise<ApiResponse<WalletAccount>> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    const trimmed = name.trim();
+    if (!trimmed) return { success: false, error: 'ACCOUNT_NAME_REQUIRED' };
+    if (trimmed.length > 64) return { success: false, error: 'ACCOUNT_NAME_TOO_LONG' };
+    const account = this.meta.accounts.find((a) => a.id === accountId);
+    if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
+    account.name = trimmed;
+    await this.persistMeta();
+    return { success: true, data: account };
+  }
+
+  async removeAccount(accountId: string): Promise<ApiResponse> {
+    if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
+    if (this.meta.accounts.length <= 1) return { success: false, error: 'CANNOT_REMOVE_LAST_ACCOUNT' };
+    const index = this.meta.accounts.findIndex((a) => a.id === accountId);
+    if (index < 0) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
+    this.meta.accounts.splice(index, 1);
+    this.meta.transactions = this.meta.transactions.filter((t) => t.accountId !== accountId);
+    await this.persistMeta();
+    return { success: true };
   }
 
   async getMnemonic(password: string): Promise<ApiResponse<{ mnemonic: string; passphrase?: string }>> {
@@ -389,6 +430,9 @@ export class WalletManager {
       const prices = await this.prices.getPrices(this.meta.settings);
       const tokenPrice = network === 'solana' ? prices.hnt : prices.usdt;
       balance.usdValue = this.prices.formatUsdValue(balance.usdt, tokenPrice, this.meta.settings.currency);
+      if (balance.usdc != null) {
+        balance.usdcUsdValue = this.prices.formatUsdValue(balance.usdc, prices.usdc, this.meta.settings.currency);
+      }
       return { success: true, data: balance };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'BALANCE_ERROR' };
@@ -428,7 +472,18 @@ export class WalletManager {
     if (!this.unlocked || !this.meta || !this.mnemonic) return { success: false, error: 'LOCKED_WALLET' };
     if (this.meta.settings.offlineMode) return { success: false, error: 'OFFLINE_MODE' };
     if (!this.blockchain.validateAddress(network, to)) return { success: false, error: 'INVALID_ADDRESS' };
+    const account = this.meta.accounts.find((a) => a.id === accountId);
+    if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     try {
+      const prices = await this.prices.getPrices(this.meta.settings);
+      const cfg = getNetworkConfig(network, this.meta.settings.testnetMode);
+      const symbol =
+        assetType === 'native'
+          ? cfg.nativeSymbol
+          : assetType === 'usdc'
+            ? 'USDC'
+            : cfg.symbol;
+      const usdPrice = getAssetUsdPrice(assetType, symbol, prices);
       const preview = await this.blockchain.previewSend(
         network,
         this.mnemonic,
@@ -436,7 +491,9 @@ export class WalletManager {
         amount,
         this.passphrase,
         feeTier || this.meta.settings.defaultFeeTier,
-        assetType
+        assetType,
+        account.derivationIndex ?? 0,
+        usdPrice
       );
       return { success: true, data: preview };
     } catch (e) {
@@ -468,6 +525,15 @@ export class WalletManager {
     if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     if (!this.blockchain.validateAddress(network, to)) return { success: false, error: 'INVALID_ADDRESS' };
     try {
+      const prices = await this.prices.getPrices(this.meta.settings);
+      const cfg = getNetworkConfig(network, this.meta.settings.testnetMode);
+      const symbol =
+        assetType === 'native'
+          ? cfg.nativeSymbol
+          : assetType === 'usdc'
+            ? 'USDC'
+            : cfg.symbol;
+      const usdPrice = getAssetUsdPrice(assetType, symbol, prices);
       const result = await this.blockchain.send(
         network,
         this.mnemonic,
@@ -475,7 +541,9 @@ export class WalletManager {
         amount,
         this.passphrase,
         feeTier || this.meta.settings.defaultFeeTier,
-        assetType
+        assetType,
+        account.derivationIndex ?? 0,
+        usdPrice
       );
       this.meta.transactions.unshift({
         id: uuidv4(),

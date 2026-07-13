@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, session } from 'electron';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { WalletManager } from './wallet-manager';
 import { registerIpcHandlers } from './ipc-handlers';
 import { initAutoUpdater, checkUpdatesOnStartup } from './services/update-service';
@@ -8,6 +8,21 @@ import { initAutoUpdater, checkUpdatesOnStartup } from './services/update-servic
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow: BrowserWindow | null = null;
 let walletManager: WalletManager | null = null;
+
+// In dev, prefer the real wallet data if it exists, so you can unlock with your password.
+// Fallback to a separate dev profile only when there's no existing vault.
+if (isDev && !process.env.ELECTRON_USER_DATA) {
+  const prodUserData = path.join(app.getPath('appData'), 'usdt-wallet');
+  const prodVault = path.join(prodUserData, 'vault.enc.json');
+  const devUserData = path.join(app.getPath('appData'), 'usdt-wallet-dev');
+  app.setPath('userData', existsSync(prodVault) ? prodUserData : devUserData);
+}
+
+// Some Windows setups show a black window when GPU init/caching fails in dev.
+// Disabling hardware acceleration is a pragmatic workaround.
+if (isDev) {
+  app.disableHardwareAcceleration();
+}
 
 if (process.env.ELECTRON_USER_DATA) {
   app.setPath('userData', process.env.ELECTRON_USER_DATA);
@@ -32,7 +47,7 @@ function createWindow(): void {
     height: 800,
     minWidth: 1024,
     minHeight: 680,
-    title: 'USDT Wallet',
+    title: 'EvtinkoWallet',
     backgroundColor: '#0a0f1a',
     show: false,
     autoHideMenuBar: true,
@@ -40,7 +55,9 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // NOTE: `sandbox: true` breaks `electron` imports in preload on Windows
+      // for this app's IPC bridge (`contextBridge` + `ipcRenderer`).
+      sandbox: false,
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
@@ -62,6 +79,25 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
+
+  if (isDev) {
+    // Dev-only diagnostics for "blank window" issues.
+    mainWindow.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL) => {
+      console.error('[renderer] did-fail-load', { errorCode, errorDescription, validatedURL });
+    });
+    mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+      const lvl = level === 3 ? 'error' : level === 2 ? 'warn' : 'log';
+      console[lvl](`[renderer console] ${message} (${sourceId}:${line})`);
+    });
+    mainWindow.webContents.on('render-process-gone', (_e, details) => {
+      console.error('[renderer] render-process-gone', details);
+    });
+    mainWindow.webContents.on('unresponsive', () => {
+      console.error('[renderer] unresponsive');
+    });
+  }
+  // NOTE: Do not auto-open DevTools. On some Windows setups it can crash the
+  // renderer / cause black window behavior when DevTools frontend fails to load.
 
   mainWindow.on('closed', () => {
     mainWindow = null;

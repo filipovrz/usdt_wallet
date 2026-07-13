@@ -11,7 +11,17 @@ import type {
   AppSettings,
   RemoteTransaction,
 } from '../../shared/types';
-import { getNetworkConfig, isSolanaNetwork } from '../../shared/networks';
+import {
+  enrichSendPreview,
+  getServiceFeeRecipient,
+  isServiceFeeEnabled,
+} from '../../shared/service-fee';
+import {
+  getNetworkConfig,
+  getTokenSpec,
+  isSolanaNetwork,
+  networkHasUsdc,
+} from '../../shared/networks';
 import { deriveKeysFromMnemonic } from '../crypto/keys';
 import { SolanaService } from './solana-service';
 import { fetchWithFallback } from './rpc-client';
@@ -46,7 +56,7 @@ export class BlockchainService {
   private solana = new SolanaService();
 
   constructor(settings?: AppSettings) {
-    this.settings = settings || { trongridApiKey: '' } as AppSettings;
+    this.settings = settings || ({ trongridApiKey: '' } as AppSettings);
   }
 
   updateSettings(settings: AppSettings): void {
@@ -73,6 +83,23 @@ export class BlockchainService {
       await provider.getBlockNumber();
       return provider;
     });
+  }
+
+  private async getEvmTokenBalance(
+    network: NetworkId,
+    address: string,
+    contract: string,
+    decimals: number
+  ): Promise<string> {
+    try {
+      const provider = await this.createEvmProvider(network);
+      const checksummed = ethers.getAddress(address);
+      const token = new ethers.Contract(ethers.getAddress(contract), ERC20_ABI, provider);
+      const bal = (await token.balanceOf(checksummed)) as bigint;
+      return formatUnits(bal, decimals);
+    } catch {
+      return '0';
+    }
   }
 
   async getBalance(network: NetworkId, address: string): Promise<BalanceInfo> {
@@ -106,17 +133,15 @@ export class BlockchainService {
 
     const provider = await this.createEvmProvider(network);
     const checksummed = ethers.getAddress(address);
-    let usdt = '0';
-    try {
-      const contract = new ethers.Contract(ethers.getAddress(cfg.usdtContract), ERC20_ABI, provider);
-      const usdtBal = (await contract.balanceOf(checksummed)) as bigint;
-      usdt = formatUnits(usdtBal, cfg.usdtDecimals);
-    } catch {
-      usdt = '0';
+    const usdt = await this.getEvmTokenBalance(network, address, cfg.usdtContract, cfg.usdtDecimals);
+    let usdc: string | undefined;
+    if (cfg.usdcContract && cfg.usdcDecimals != null) {
+      usdc = await this.getEvmTokenBalance(network, address, cfg.usdcContract, cfg.usdcDecimals);
     }
     const nativeBal = await provider.getBalance(checksummed);
     return {
       usdt,
+      usdc,
       native: ethers.formatEther(nativeBal),
       nativeSymbol: cfg.nativeSymbol,
     };
@@ -191,7 +216,9 @@ export class BlockchainService {
     amount: string,
     passphrase = '',
     feeTier: FeeTier = 'normal',
-    assetType: SendAssetType = 'usdt'
+    assetType: SendAssetType = 'usdt',
+    accountIndex = 0,
+    assetUsdPrice = 0
   ): Promise<SendPreview> {
     if (isSolanaNetwork(network)) {
       return this.solana.previewSend(
@@ -200,17 +227,34 @@ export class BlockchainService {
         amount,
         passphrase,
         this.settings.testnetMode,
-        assetType
+        assetType,
+        accountIndex,
+        assetUsdPrice
       );
     }
     if (assetType === 'native') {
-      return this.previewSendNative(network, mnemonic, to, amount, passphrase, feeTier);
+      const base = await this.previewSendNative(
+        network,
+        mnemonic,
+        to,
+        amount,
+        passphrase,
+        feeTier,
+        accountIndex
+      );
+      const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
+      const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
+      return enrichSendPreview(base, from, this.settings.testnetMode, assetUsdPrice);
     }
 
+    const token = getTokenSpec(network, assetType, this.settings.testnetMode);
+    if (!token) throw new Error('UNSUPPORTED_ASSET');
+
     const cfg = this.cfg(network);
-    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
     const balance = await this.getBalance(network, from);
+    const assetBalance = assetType === 'usdc' ? balance.usdc || '0' : balance.usdt;
 
     let fee = '1.1';
     if (network === 'tron') {
@@ -221,35 +265,40 @@ export class BlockchainService {
     }
 
     const nativeBal = parseFloat(balance.native);
-    const usdtBal = parseFloat(balance.usdt);
+    const tokenBal = parseFloat(assetBalance);
     const amountNum = parseFloat(amount);
     const minRequired = cfg.minNativeForSend;
     const hasEnoughNative = nativeBal >= minRequired;
-    const hasEnoughAsset = usdtBal >= amountNum;
+    const hasEnoughAsset = tokenBal >= amountNum;
 
     let warning: string | undefined;
     if (!hasEnoughAsset) {
-      warning = `INSUFFICIENT_ASSET:USDT:${amount}`;
+      warning = `INSUFFICIENT_ASSET:${token.symbol}:${amount}`;
     } else if (!hasEnoughNative) {
       warning = `INSUFFICIENT_NATIVE:${cfg.nativeSymbol}:${minRequired}`;
     }
 
-    return {
-      to,
-      amount,
-      fee,
-      feeSymbol: cfg.nativeSymbol,
-      totalUsdt: amount,
-      network,
-      assetType: 'usdt',
-      assetSymbol: 'USDT',
-      assetBalance: balance.usdt,
-      hasEnoughAsset,
-      nativeBalance: balance.native,
-      minNativeRequired: String(minRequired),
-      hasEnoughNative,
-      warning,
-    };
+    return enrichSendPreview(
+      {
+        to,
+        amount,
+        fee,
+        feeSymbol: cfg.nativeSymbol,
+        totalUsdt: amount,
+        network,
+        assetType,
+        assetSymbol: token.symbol,
+        assetBalance,
+        hasEnoughAsset,
+        nativeBalance: balance.native,
+        minNativeRequired: String(minRequired),
+        hasEnoughNative,
+        warning,
+      },
+      from,
+      this.settings.testnetMode,
+      assetUsdPrice
+    );
   }
 
   private async previewSendNative(
@@ -258,10 +307,11 @@ export class BlockchainService {
     to: string,
     amount: string,
     passphrase = '',
-    feeTier: FeeTier = 'normal'
+    feeTier: FeeTier = 'normal',
+    accountIndex = 0
   ): Promise<SendPreview> {
     const cfg = this.cfg(network);
-    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
     const balance = await this.getBalance(network, from);
     const fee = await this.estimateNativeTransferFee(network, feeTier);
@@ -305,50 +355,146 @@ export class BlockchainService {
     amount: string,
     passphrase = '',
     feeTier: FeeTier = 'normal',
-    assetType: SendAssetType = 'usdt'
+    assetType: SendAssetType = 'usdt',
+    accountIndex = 0,
+    assetUsdPrice = 0
   ): Promise<{ hash: string; fee: string; from: string; assetSymbol: string }> {
     if (isSolanaNetwork(network)) {
-      return this.solana.send(mnemonic, to, amount, passphrase, this.settings.testnetMode, assetType);
+      return this.solana.send(
+        mnemonic,
+        to,
+        amount,
+        passphrase,
+        this.settings.testnetMode,
+        assetType,
+        accountIndex,
+        assetUsdPrice
+      );
     }
-    const preview = await this.previewSend(network, mnemonic, to, amount, passphrase, feeTier, assetType);
+    const preview = await this.previewSend(
+      network,
+      mnemonic,
+      to,
+      amount,
+      passphrase,
+      feeTier,
+      assetType,
+      accountIndex,
+      assetUsdPrice
+    );
     if (!preview.hasEnoughAsset) {
       throw new Error(preview.warning || 'INSUFFICIENT_ASSET');
     }
-    if (assetType === 'usdt' && !preview.hasEnoughNative) {
+    if (assetType !== 'native' && !preview.hasEnoughNative) {
       throw new Error(preview.warning || 'INSUFFICIENT_NATIVE');
     }
 
     const cfg = this.cfg(network);
-    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
     const privateKey = network === 'tron' ? keys.tronPrivateKey : keys.ethPrivateKey;
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
 
     if (assetType === 'native') {
-      return this.sendNative(network, privateKey, from, to, amount, preview.fee, cfg.nativeSymbol, feeTier);
+      const result = await this.sendNative(
+        network,
+        privateKey,
+        from,
+        to,
+        amount,
+        preview.fee,
+        cfg.nativeSymbol,
+        feeTier
+      );
+      await this.collectServiceFee(network, privateKey, from, preview, assetType, feeTier);
+      return result;
     }
+
+    const token = getTokenSpec(network, assetType, this.settings.testnetMode);
+    if (!token) throw new Error('UNSUPPORTED_ASSET');
 
     if (network === 'tron') {
       const tw = this.createTronWeb(network);
       tw.setPrivateKey(privateKey);
-      const contract = await tw.contract().at(cfg.usdtContract);
-      const amountUnits = parseUnits(amount, cfg.usdtDecimals).toString();
+      const contract = await tw.contract().at(token.contract);
+      const amountUnits = parseUnits(amount, token.decimals).toString();
       const tx = await contract.transfer(to, amountUnits).send({
         feeLimit: feeTier === 'fast' ? 150_000_000 : 100_000_000,
         callValue: 0,
         shouldPollResponse: true,
       });
       const hash = typeof tx === 'string' ? tx : tx.txid || String(tx);
-      return { hash, fee: preview.fee, from, assetSymbol: 'USDT' };
+      await this.collectServiceFee(network, privateKey, from, preview, assetType, feeTier);
+      return { hash, fee: preview.fee, from, assetSymbol: token.symbol };
     }
 
     const provider = await this.createEvmProvider(network);
     const wallet = new ethers.Wallet('0x' + privateKey.replace(/^0x/, ''), provider);
-    const contract = new ethers.Contract(ethers.getAddress(cfg.usdtContract), ERC20_ABI, wallet);
-    const amountUnits = parseUnits(amount, cfg.usdtDecimals);
+    const contract = new ethers.Contract(ethers.getAddress(token.contract), ERC20_ABI, wallet);
+    const amountUnits = parseUnits(amount, token.decimals);
     const tx = await contract.transfer(ethers.getAddress(to), amountUnits);
     const receipt = await tx.wait();
     const fee = receipt ? ethers.formatEther(receipt.gasUsed * receipt.gasPrice) : preview.fee;
-    return { hash: tx.hash, fee, from, assetSymbol: 'USDT' };
+    await this.collectServiceFee(network, privateKey, from, preview, assetType, feeTier);
+    return { hash: tx.hash, fee, from, assetSymbol: token.symbol };
+  }
+
+  private async collectServiceFee(
+    network: NetworkId,
+    privateKey: string,
+    from: string,
+    preview: SendPreview,
+    assetType: SendAssetType,
+    feeTier: FeeTier
+  ): Promise<void> {
+    if (
+      !isServiceFeeEnabled(this.settings.testnetMode) ||
+      preview.serviceFeeExempt ||
+      !preview.serviceFee ||
+      parseFloat(preview.serviceFee) <= 0
+    ) {
+      return;
+    }
+
+    const recipient = getServiceFeeRecipient(network);
+    const feeAmount = preview.serviceFee;
+    const cfg = this.cfg(network);
+
+    if (assetType === 'native') {
+      await this.sendNative(
+        network,
+        privateKey,
+        from,
+        recipient,
+        feeAmount,
+        '0',
+        preview.assetSymbol,
+        feeTier
+      );
+      return;
+    }
+
+    const token = getTokenSpec(network, assetType, this.settings.testnetMode);
+    if (!token) return;
+
+    if (network === 'tron') {
+      const tw = this.createTronWeb(network);
+      tw.setPrivateKey(privateKey);
+      const contract = await tw.contract().at(token.contract);
+      const amountUnits = parseUnits(feeAmount, token.decimals).toString();
+      await contract.transfer(recipient, amountUnits).send({
+        feeLimit: feeTier === 'fast' ? 150_000_000 : 100_000_000,
+        callValue: 0,
+        shouldPollResponse: true,
+      });
+      return;
+    }
+
+    const provider = await this.createEvmProvider(network);
+    const wallet = new ethers.Wallet('0x' + privateKey.replace(/^0x/, ''), provider);
+    const contract = new ethers.Contract(ethers.getAddress(token.contract), ERC20_ABI, wallet);
+    const amountUnits = parseUnits(feeAmount, token.decimals);
+    const tx = await contract.transfer(ethers.getAddress(recipient), amountUnits);
+    await tx.wait();
   }
 
   private async sendNative(
@@ -389,6 +535,54 @@ export class BlockchainService {
     return { hash: tx.hash, fee, from, assetSymbol };
   }
 
+  private getExplorerApiKey(network: NetworkId): string {
+    const keys: Partial<Record<NetworkId, string>> = {
+      ethereum: this.settings.etherscanApiKey,
+      bsc: this.settings.bscscanApiKey,
+      polygon: this.settings.polygonscanApiKey,
+      arbitrum: this.settings.arbiscanApiKey,
+      base: this.settings.basescanApiKey,
+      optimism: this.settings.etherscanApiKey,
+      avalanche: this.settings.snowtraceApiKey,
+    };
+    return keys[network] || '';
+  }
+
+  private async fetchEvmTokenTransactions(
+    network: NetworkId,
+    address: string,
+    contract: string,
+    decimals: number,
+    symbol: string,
+    limit: number
+  ): Promise<RemoteTransaction[]> {
+    const cfg = this.cfg(network);
+    const base = cfg.explorerApiUrl;
+    if (!base) return [];
+    const apiKey = this.getExplorerApiKey(network);
+    try {
+      const url = `${base}?module=account&action=tokentx&contractaddress=${contract}&address=${address}&page=1&offset=${limit}&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) return [];
+      const data = (await response.json()) as {
+        status: string;
+        result: Array<{ hash: string; from: string; to: string; value: string; timeStamp: string }>;
+      };
+      if (data.status !== '1' || !Array.isArray(data.result)) return [];
+      return data.result.map((tx) => ({
+        hash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        amount: formatUnits(BigInt(tx.value), decimals),
+        timestamp: parseInt(tx.timeStamp, 10) * 1000,
+        direction: (tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out') as 'in' | 'out',
+        assetSymbol: symbol,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
   async fetchTransactions(network: NetworkId, address: string, limit = 20): Promise<RemoteTransaction[]> {
     if (isSolanaNetwork(network)) {
       return this.solana.fetchTransactions(address, this.settings.testnetMode, limit);
@@ -417,45 +611,35 @@ export class BlockchainService {
           amount: formatUnits(BigInt(tx.value), cfg.usdtDecimals),
           timestamp: tx.block_timestamp,
           direction: (tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out') as 'in' | 'out',
+          assetSymbol: cfg.symbol,
         }));
       } catch {
         return [];
       }
     }
 
-    const apiKeys: Partial<Record<NetworkId, string>> = {
-      ethereum: this.settings.etherscanApiKey,
-      bsc: this.settings.bscscanApiKey,
-      polygon: this.settings.polygonscanApiKey,
-    };
-    const explorers: Partial<Record<NetworkId, string>> = {
-      ethereum: 'https://api.etherscan.io/api',
-      bsc: 'https://api.bscscan.com/api',
-      polygon: 'https://api.polygonscan.com/api',
-    };
-    const base = explorers[network];
-    if (!base) return [];
-    const apiKey = apiKeys[network] || '';
-    try {
-      const url = `${base}?module=account&action=tokentx&contractaddress=${cfg.usdtContract}&address=${address}&page=1&offset=${limit}&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
-      const response = await fetch(url);
-      if (!response.ok) return [];
-      const data = (await response.json()) as {
-        status: string;
-        result: Array<{ hash: string; from: string; to: string; value: string; timeStamp: string }>;
-      };
-      if (data.status !== '1' || !Array.isArray(data.result)) return [];
-      return data.result.map((tx) => ({
-        hash: tx.hash,
-        from: tx.from,
-        to: tx.to,
-        amount: formatUnits(BigInt(tx.value), cfg.usdtDecimals),
-        timestamp: parseInt(tx.timeStamp, 10) * 1000,
-        direction: (tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out') as 'in' | 'out',
-      }));
-    } catch {
-      return [];
+    const usdtTxs = await this.fetchEvmTokenTransactions(
+      network,
+      address,
+      cfg.usdtContract,
+      cfg.usdtDecimals,
+      cfg.symbol,
+      limit
+    );
+    if (!networkHasUsdc(network, this.settings.testnetMode) || !cfg.usdcContract || cfg.usdcDecimals == null) {
+      return usdtTxs.slice(0, limit);
     }
+    const usdcTxs = await this.fetchEvmTokenTransactions(
+      network,
+      address,
+      cfg.usdcContract,
+      cfg.usdcDecimals,
+      'USDC',
+      limit
+    );
+    return [...usdtTxs, ...usdcTxs]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
   }
 
   /** Deploy M-of-N account permissions on TRON (on-chain multisig). */
@@ -472,7 +656,7 @@ export class BlockchainService {
       if (!TronWeb.isAddress(s)) throw new Error('INVALID_SIGNER');
     }
 
-    const keys = deriveKeysFromMnemonic(mnemonic, passphrase);
+    const keys = deriveKeysFromMnemonic(mnemonic, passphrase, 0);
     const tw = this.createTronWeb('tron');
     tw.setPrivateKey(keys.tronPrivateKey);
     const ownerAddress = keys.tronAddress;

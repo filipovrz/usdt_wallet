@@ -1,13 +1,52 @@
 # Changelog
 
+## [2.5.0] — 2026-07-14
+
+### Добавено
+- **Optimism** и **Avalanche C-Chain** — USDT, USDC, native (ETH / AVAX)
+- **API keys:** Arbiscan, Basescan, Snowtrace (Optimism ползва Etherscan key)
+- **Account management:** преименуване и премахване на акаунти (Settings → Accounts)
+- **AVAX** цена от CoinGecko за service fee
+
+### Поддържани мрежи (9)
+TRON · Ethereum · BSC · Polygon · Arbitrum · Base · Optimism · Avalanche · Solana
+
+## [2.4.0] — 2026-07-14
+
+### Добавено
+- **Service fee** — 0.25% при mainnet send (USDT/USDC/native), min $0.01, max $1
+- Owner wallet exempt; testnet без такса
+- Прозрачен preview + Help §15 Service fee
+
+## [2.3.1] — 2026-07-13 — Production release
+
+### Променено
+- **Rebrand** — USDT Wallet → **EvtinkoWallet** (UI, прозорец, Help, NSIS installer)
+- **Production** — Content-Security-Policy в release build; dev diagnostics само в dev mode
+
+### Поддържани мрежи (7)
+TRON · Ethereum · BSC · Polygon · Arbitrum · Base · Solana
+
+## [2.3.0] — 2026-07-13
+
+### Добавено
+- **USDC** — Ethereum, BSC, Polygon, Solana (mainnet + testnet)
+- **Arbitrum One** и **Base** — USDT, USDC, native ETH
+- Dashboard показва USDC баланс; Send с 3 asset опции (token / USDC / native)
+
 ## [2.2.2] — 2026-07-13
 
 ### Поправено
+- **Multi-account derivation** — уникални TRON/ETH/SOL адреси чрез `derivationIndex` (vault v4)
+- **Welcome page** — Отключи + Създай + Импортирай на един екран; ETH в описанието
+- **Send UX** — toast по asset (ETH/SOL/USDT), account selector, self-send блок за всички мрежи
+- **Settings → Accounts** — TRON + ETH + SOL адреси; предупреждение при празно име
 - **EVM address** — адресът се взима live от seed при unlock; backfill за `ethAddress`
 - **Receive** — показва 42/42 символа; предупреждение при невалиден Ethereum адрес
-- **Send TRON** — блокира self-send (същия TRON адрес)
+- **Dev stability** — black screen fix (`process is not defined`), sandbox/GPU, real vault in dev
 
 ### Добавено
+- Unit test: multi-account derivation (различни адреси за index 0 vs 1)
 - `scripts/restart-wallet.ps1` — рестарт на приложението с една команда
 - Help/README: Sepolia faucets без mainnet ETH (Chainlink, Google Cloud)
 

@@ -54,6 +54,14 @@ export function registerIpcHandlers(wallet: WalletManager): void {
     return wallet.addAccount(name);
   });
 
+  ipcMain.handle(IPC_CHANNELS.RENAME_ACCOUNT, async (_e, payload: { accountId: string; name: string }) => {
+    return wallet.renameAccount(payload.accountId, payload.name);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.REMOVE_ACCOUNT, async (_e, accountId: string) => {
+    return wallet.removeAccount(accountId);
+  });
+
   ipcMain.handle(IPC_CHANNELS.GET_MNEMONIC, async (_e, payload: { password: string }) => {
     if (!payload?.password) return { success: false, error: 'VALIDATION_ERROR' };
     return wallet.getMnemonic(payload.password);

@@ -22,7 +22,7 @@ export function CreateWalletPage() {
 
   const [step, setStep] = useState<'form' | 'mnemonic'>('form');
 
-  const [name, setName] = useState('Моят USDT портфейл');
+  const [name, setName] = useState('Моят портфейл');
 
   const [password, setPassword] = useState('');
 

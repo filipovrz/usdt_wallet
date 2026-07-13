@@ -1,7 +1,7 @@
 {
   "name": "usdt-wallet",
-  "version": "2.2.2",
-  "description": "Professional non-custodial multi-chain desktop wallet — USDT, native coins, Solana HNT",
+  "version": "2.5.0",
+  "description": "EvtinkoWallet — non-custodial multi-chain desktop wallet (USDT, USDC, native coins, Solana)",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.node.json && vite build && tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs",
     "preview": "vite preview",
-    "electron:dev": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron . || exit 0\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
     "test": "npm run build && node scripts/run-tests.mjs",
@@ -71,7 +71,7 @@
   },
   "build": {
     "appId": "com.usdtwallet.desktop",
-    "productName": "USDT Wallet",
+    "productName": "EvtinkoWallet",
     "copyright": "Copyright © 2026 Evtinko Auctions",
     "directories": {
       "output": "release"
@@ -100,8 +100,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "USDT Wallet",
-      "uninstallDisplayName": "USDT Wallet",
+      "shortcutName": "EvtinkoWallet",
+      "uninstallDisplayName": "EvtinkoWallet",
       "deleteAppDataOnUninstall": true,
       "installerLanguages": [
         "en_US"

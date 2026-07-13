@@ -63,13 +63,7 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          !session.hasVault ? (
-            <WelcomePage />
-          ) : session.unlocked ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Navigate to="/unlock" replace />
-          )
+          session.unlocked ? <Navigate to="/dashboard" replace /> : <WelcomePage />
         }
       />
       <Route

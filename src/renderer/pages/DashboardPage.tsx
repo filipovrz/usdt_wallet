@@ -1,9 +1,9 @@
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Button, Card, Badge, NetworkSelector, LoadingSpinner, WarningAlert } from '../components/ui';
+import { Button, Card, Badge, NetworkSelector, AccountSelector, LoadingSpinner, WarningAlert } from '../components/ui';
 import { getNetworkConfig } from '@shared/networks';
-import { getAccountAddress, getNetworkTokenLabel } from '@shared/types';
+import { getAccountAddress, getNetworkTokenLabel, networkHasUsdc } from '@shared/types';
 import type { TronResources } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 
@@ -57,26 +57,19 @@ export function DashboardPage() {
   const address = getAccountAddress(activeAccount, activeNetwork);
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
   const tokenLabel = getNetworkTokenLabel(activeNetwork, settings.testnetMode);
+  const showUsdc = networkHasUsdc(activeNetwork, settings.testnetMode);
 
   return (
     <div className="p-8 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          {session.accounts.length > 1 && (
-            <select
-              className="mt-2 rounded-lg border border-surface-600 bg-surface-800 px-3 py-1 text-sm"
-              value={activeAccount.id}
-              onChange={(e) => {
-                const acc = session.accounts.find((a) => a.id === e.target.value);
-                if (acc) setActiveAccount(acc);
-              }}
-            >
-              {session.accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          )}
+          <AccountSelector
+            className="mt-2"
+            accounts={session.accounts}
+            value={activeAccount.id}
+            onChange={setActiveAccount}
+          />
         </div>
         <Button variant="secondary" onClick={handleRefresh} disabled={settings.offlineMode}>
           <RefreshCw size={16} />
@@ -98,6 +91,17 @@ export function DashboardPage() {
             </p>
             {balance?.usdValue && !settings.hideBalances && (
               <p className="mt-1 text-sm text-gray-500">≈ {balance.usdValue}</p>
+            )}
+            {showUsdc && (
+              <>
+                <p className="mt-4 text-sm text-gray-400">USDC {t.balance}</p>
+                <p className="mt-1 text-2xl font-bold">
+                  {settings.hideBalances ? '••••••' : balance?.usdc ?? '0'} USDC
+                </p>
+                {balance?.usdcUsdValue && !settings.hideBalances && (
+                  <p className="mt-1 text-sm text-gray-500">≈ {balance.usdcUsdValue}</p>
+                )}
+              </>
             )}
             <p className="mt-4 text-sm text-gray-500">
               Native: {settings.hideBalances ? '••••' : `${balance?.native ?? '0'} ${cfg.nativeSymbol}`}
