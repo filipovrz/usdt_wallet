@@ -653,7 +653,9 @@ export class WalletManager {
 
   async refreshTransactions(accountId: string): Promise<ApiResponse<TransactionRecord[]>> {
     if (!this.unlocked || !this.meta) return { success: false, error: 'LOCKED_WALLET' };
-    if (this.meta.settings.offlineMode) return { success: true, data: this.meta.transactions };
+    if (this.meta.settings.offlineMode) {
+      return { success: true, data: this.meta.transactions.filter((t) => t.accountId === accountId) };
+    }
     const account = this.meta.accounts.find((a) => a.id === accountId);
     if (!account) return { success: false, error: 'ACCOUNT_NOT_FOUND' };
     const allTxs = [...this.meta.transactions];

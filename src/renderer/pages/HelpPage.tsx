@@ -3,7 +3,7 @@ import { BookOpen, ChevronRight } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { Card, Badge, CopyrightFooter } from '../components/ui';
 import { helpContent } from '../i18n/help-content';
-import { APP_VERSION, VERSION_HISTORY, COPYRIGHT_TEXT } from '@shared/version';
+import { APP_VERSION, VERSION_HISTORY, APP_REPOSITORY } from '@shared/version';
 import clsx from 'clsx';
 
 export function HelpPage() {
@@ -91,8 +91,12 @@ export function HelpPage() {
           </Card>
         </div>
       </div>
-      <CopyrightFooter className="mt-8" />
-      <p className="mt-1 text-center text-xs text-gray-700">{COPYRIGHT_TEXT}</p>
+      <CopyrightFooter className="mt-8" showSignature />
+      <p className="mt-1 text-center text-xs text-gray-700">
+        <a href={APP_REPOSITORY} className="text-brand-400 hover:underline" target="_blank" rel="noreferrer">
+          {APP_REPOSITORY}
+        </a>
+      </p>
     </div>
   );
 }

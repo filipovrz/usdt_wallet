@@ -5,6 +5,7 @@ import { Button, Card, Input, ErrorAlert, SuccessAlert } from '../components/ui'
 import type { MultisigPolicy, NetworkId } from '@shared/types';
 import { NetworkSelector } from '../components/ui';
 import { useNotify } from '../hooks/useNotify';
+import { APP_VERSION, APP_CODE_SIGNATURE, COPYRIGHT_TEXT, APP_REPOSITORY } from '@shared/version';
 
 export function SecurityPage() {
   const { t } = useWallet();
@@ -394,6 +395,16 @@ export function SettingsPage() {
         <Input label="New" type="password" value={pwdNew} onChange={(e) => setPwdNew(e.target.value)} />
         <Button onClick={handleChangePassword}>Change password</Button>
         {pwdMsg && <p className="text-sm text-gray-400">{pwdMsg}</p>}
+      </Card>
+
+      <Card className="max-w-lg space-y-4">
+        <h2 className="font-semibold">About</h2>
+        <p className="text-sm text-gray-300">EvtinkoWallet v{APP_VERSION}</p>
+        <p className="text-xs text-gray-500">{COPYRIGHT_TEXT}</p>
+        <p className="font-mono text-[10px] text-gray-600">{APP_CODE_SIGNATURE}</p>
+        <a href={APP_REPOSITORY} className="text-xs text-brand-400 hover:underline" target="_blank" rel="noreferrer">
+          {APP_REPOSITORY}
+        </a>
       </Card>
 
       <Card className="max-w-lg space-y-4">

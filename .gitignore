@@ -2,6 +2,10 @@ node_modules/
 dist/
 dist-electron/
 release/
+installers/*.exe
+installers/*.blockmap
+!installers/README.md
+!installers/manifest.json
 test-results/
 playwright-report/
 playwright/.cache/

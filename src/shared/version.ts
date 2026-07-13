@@ -1,8 +1,12 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '3.2.1';
+export const APP_VERSION = '3.2.2';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
+
+/** Embedded authenticity signature — referenced in Help, Settings, and main process startup log. */
+export const APP_CODE_SIGNATURE = 'Evtinko Auctions · EvtinkoWallet · github.com/filipovrz/usdt_wallet';
+export const APP_REPOSITORY = 'https://github.com/filipovrz/usdt_wallet';
 
 /** Optional JSON manifest: { "version": "2.1.0", "notes": "..." } */
 const ENV = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
@@ -11,6 +15,16 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '3.2.2',
+    date: '2026-07-14',
+    changes: [
+      'Welcome screen — 14 networks, BTC Lightning, TON, Solana',
+      'Offline mode: History filtered by active account',
+      'Copyright signature in Help, Settings, and startup log',
+      'macOS/Linux icon prep script for electron-builder',
+    ],
+  },
   {
     version: '3.2.1',
     date: '2026-07-14',

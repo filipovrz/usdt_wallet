@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.2.2] — 2026-07-14
+
+### Добавено / подобрено
+- **Welcome screen** — 14 мрежи, BTC Lightning, TON, Solana (BG/EN)
+- **Copyright signature** — `APP_CODE_SIGNATURE` в код, Help, Settings About, startup log
+- **Offline mode** — History филтрира по активен акаунт
+- **Installers archive** — `installers/` папка с всички Windows `.exe` версии
+- macOS/Linux icon prep script (`prepare-icons.mjs`)
+
 ## [3.2.1] — 2026-07-14
 
 ### Добавено / подобрено

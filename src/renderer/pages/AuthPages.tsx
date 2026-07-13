@@ -35,8 +35,13 @@ export function WelcomePage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white">{t.welcome}</h1>
-
+          <p className="mt-1 text-sm text-brand-300/90">{t.tagline}</p>
           <p className="mt-3 text-gray-400">{t.welcomeDesc}</p>
+          <ul className="mx-auto mt-4 max-w-md space-y-1 text-left text-xs text-gray-500">
+            {t.welcomeNetworks.map((line) => (
+              <li key={line}>• {line}</li>
+            ))}
+          </ul>
 
         </div>
 
@@ -94,7 +99,7 @@ export function WelcomePage() {
 
         <p className="text-center text-xs text-gray-600">{t.installInfo}</p>
 
-        <CopyrightFooter />
+        <CopyrightFooter showSignature />
 
       </div>
 
@@ -222,7 +227,7 @@ export function UnlockPage() {
 
         </form>
 
-        <CopyrightFooter />
+        <CopyrightFooter showSignature />
 
       </Card>
 

@@ -3,6 +3,7 @@ import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, useState } from '
 import type { NetworkId, SendAssetType, WalletAccount } from '@shared/types';
 import { ALL_NETWORK_IDS } from '@shared/networks';
 import { getNetworkConfig } from '@shared/networks';
+import { APP_CODE_SIGNATURE, COPYRIGHT_TEXT } from '@shared/version';
 
 export function Button({
   variant = 'primary',
@@ -325,11 +326,20 @@ export function WarningAlert({ message }: { message: string }) {
   return <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div>;
 }
 
-export function CopyrightFooter({ className }: { className?: string }) {
+export function CopyrightFooter({
+  className,
+  showSignature = false,
+}: {
+  className?: string;
+  showSignature?: boolean;
+}) {
   return (
-    <p className={clsx('text-center text-xs text-gray-600', className)}>
-      © {new Date().getFullYear()} Evtinko Auctions
-    </p>
+    <div className={clsx('text-center text-xs text-gray-600', className)}>
+      <p>{COPYRIGHT_TEXT}</p>
+      {showSignature && (
+        <p className="mt-0.5 font-mono text-[10px] text-gray-700">{APP_CODE_SIGNATURE}</p>
+      )}
+    </div>
   );
 }
 

@@ -21,7 +21,7 @@ const { BlockchainService } = require(path.join(root, 'dist-electron/main/servic
 const { DEFAULT_SETTINGS, VAULT_VERSION } = require(path.join(root, 'dist-electron/shared/types.js'));
 const { createWalletSchema, sendSchema } = require(path.join(root, 'dist-electron/shared/schemas.js'));
 const { multisigSchema } = require(path.join(root, 'dist-electron/shared/schemas.js'));
-const { APP_VERSION } = require(path.join(root, 'dist-electron/shared/version.js'));
+const { APP_VERSION, APP_CODE_SIGNATURE, COPYRIGHT_HOLDER } = require(path.join(root, 'dist-electron/shared/version.js'));
 const { calculateServiceFee, computeServiceFeeAmount, isServiceFeeEnabled } = require(path.join(root, 'dist-electron/shared/service-fee.js'));
 const { OWNER_WALLET } = require(path.join(root, 'dist-electron/shared/service-fee.config.js'));
 const { compareSemver } = require(path.join(root, 'scripts/test-helpers.mjs'));
@@ -64,6 +64,15 @@ async function runTests() {
     ok('Version sync (package.json ↔ version.ts)');
   } catch (e) {
     fail('Version sync', e);
+  }
+
+  // Copyright signature
+  try {
+    assert(typeof APP_CODE_SIGNATURE === 'string' && APP_CODE_SIGNATURE.length > 10, 'APP_CODE_SIGNATURE missing');
+    assert(APP_CODE_SIGNATURE.includes(COPYRIGHT_HOLDER), 'signature must include copyright holder');
+    ok('Copyright code signature present');
+  } catch (e) {
+    fail('Copyright code signature', e);
   }
 
   // Vault encryption

@@ -26,7 +26,7 @@ export const helpContent = {
         id: 'install',
         title: '2. Инсталация и стартиране',
         content: [
-          'Windows: стартирайте „EvtinkoWallet Setup X.X.X.exe“ от папка release/.',
+          'Windows: стартирайте „EvtinkoWallet Setup X.X.X.exe“ от папка release/ или installers/ (архив на всички версии).',
           'След инсталация: Desktop shortcut или Start Menu → EvtinkoWallet.',
           'Development: npm install → npm run electron:dev в папката на проекта.',
           'Деинсталация: Control Panel → Programs → EvtinkoWallet → Uninstall (изтрива и app data).',
@@ -247,7 +247,7 @@ export const helpContent = {
         id: 'install',
         title: '2. Installation & launch',
         content: [
-          'Windows: run "EvtinkoWallet Setup X.X.X.exe" from the release/ folder.',
+          'Windows: run "EvtinkoWallet Setup X.X.X.exe" from the release/ or installers/ folder (all versions archive).',
           'After install: Desktop shortcut or Start Menu → EvtinkoWallet.',
           'Development: npm install → npm run electron:dev in the project folder.',
           'Uninstall: Control Panel → Programs → EvtinkoWallet → Uninstall (deletes app data).',

@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from 'fs';
 import { WalletManager } from './wallet-manager';
 import { registerIpcHandlers } from './ipc-handlers';
 import { initAutoUpdater, checkUpdatesOnStartup } from './services/update-service';
+import { APP_VERSION, APP_CODE_SIGNATURE, COPYRIGHT_TEXT } from '../shared/version';
 
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow: BrowserWindow | null = null;
@@ -123,6 +124,8 @@ app.whenReady().then(() => {
 
   registerIpcHandlers(getWalletManager());
   initAutoUpdater();
+  console.log(`[EvtinkoWallet] v${APP_VERSION} — ${COPYRIGHT_TEXT}`);
+  console.log(`[EvtinkoWallet] ${APP_CODE_SIGNATURE}`);
   createWindow();
 
   const settingsRes = getWalletManager().getSettings();

@@ -4,7 +4,12 @@ export const translations = {
     tagline: 'Некастодиален портфейл · Локални ключове · Нулева телеметрия',
     welcome: 'Добре дошли',
     welcomeDesc:
-      'Професионален десктоп портфейл за ETH и USDT (TRC-20 и ERC-20). Вашите ключове никога не напускат компютъра.',
+      'Професионален некастодиален портфейл за 14 мрежи. Вашите ключове никога не напускат компютъра.',
+    welcomeNetworks: [
+      'TRON · Bitcoin (on-chain + Lightning) · TON · Solana',
+      'Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche, zkSync, Linea, Scroll',
+      'USDT · USDC · DAI · native coins',
+    ],
     createWallet: 'Създай нов портфейл',
     createWalletHint: 'Само ако нямате портфейл. Ако вече имате USDT/ETH и seed на хартия → използвайте „Импортирай портфейл“, не създавайте нов!',
     vaultAlreadyExists: 'Портфейлът вече е създаден на този компютър. Въведете паролата си, за да го отключите.',
@@ -216,7 +221,12 @@ export const translations = {
     tagline: 'Non-custodial · Local keys · Zero telemetry',
     welcome: 'Welcome',
     welcomeDesc:
-      'Professional desktop wallet for ETH and USDT (TRC-20 & ERC-20). Your keys never leave your computer.',
+      'Professional non-custodial wallet for 14 networks. Your keys never leave your computer.',
+    welcomeNetworks: [
+      'TRON · Bitcoin (on-chain + Lightning) · TON · Solana',
+      'Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche, zkSync, Linea, Scroll',
+      'USDT · USDC · DAI · native coins',
+    ],
     createWallet: 'Create new wallet',
     createWalletHint: 'Only if you have no wallet yet. If you already have USDT/ETH and a seed on paper → use Import, do not create a new one!',
     vaultAlreadyExists: 'A wallet already exists on this computer. Enter your password to unlock it.',

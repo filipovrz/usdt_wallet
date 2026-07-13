@@ -1,6 +1,6 @@
 {
   "name": "usdt-wallet",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "EvtinkoWallet — non-custodial multi-chain desktop wallet (USDT, USDC, BTC, TON, native coins, Solana)",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",
@@ -11,9 +11,9 @@
     "preview": "vite preview",
     "electron:dev": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron . || exit 0\"",
     "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux",
+    "electron:build:win": "npm run build && electron-builder --win && node scripts/archive-installers.mjs",
+    "electron:build:mac": "node scripts/prepare-icons.mjs && npm run build && electron-builder --mac",
+    "electron:build:linux": "node scripts/prepare-icons.mjs && npm run build && electron-builder --linux",
     "test": "npm run build && node scripts/run-tests.mjs",
     "test:live": "npm run build && node scripts/run-tests.mjs --live",
     "test:e2e": "npm run build && playwright test",
@@ -119,7 +119,7 @@
       "target": [
         "dmg"
       ],
-      "icon": "build/icon.icns",
+      "icon": "build/icon.png",
       "category": "public.app-category.finance"
     },
     "linux": {
