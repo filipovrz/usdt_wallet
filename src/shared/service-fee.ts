@@ -68,7 +68,7 @@ export function computeServiceFeeAmount(
     return { amount: '0', usdValue: 0 };
   }
 
-  const price = usdPricePerUnit > 0 ? usdPricePerUnit : assetSymbol === 'USDT' || assetSymbol === 'USDC' ? 1 : 0;
+  const price = usdPricePerUnit > 0 ? usdPricePerUnit : assetSymbol === 'USDT' || assetSymbol === 'USDC' || assetSymbol === 'DAI' ? 1 : 0;
   const amountUsd = price > 0 ? amountNum * price : 0;
 
   let feeUsd: number;
@@ -113,6 +113,7 @@ export function getAssetUsdPrice(
   prices: {
     usdt: number;
     usdc: number;
+    dai: number;
     trx: number;
     eth: number;
     bnb: number;
@@ -127,6 +128,7 @@ export function getAssetUsdPrice(
     return prices.usdt;
   }
   if (assetType === 'usdc') return prices.usdc;
+  if (assetType === 'dai') return prices.dai;
   const map: Record<string, number> = {
     TRX: prices.trx,
     ETH: prices.eth,

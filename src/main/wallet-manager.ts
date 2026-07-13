@@ -433,6 +433,9 @@ export class WalletManager {
       if (balance.usdc != null) {
         balance.usdcUsdValue = this.prices.formatUsdValue(balance.usdc, prices.usdc, this.meta.settings.currency);
       }
+      if (balance.dai != null) {
+        balance.daiUsdValue = this.prices.formatUsdValue(balance.dai, prices.dai, this.meta.settings.currency);
+      }
       return { success: true, data: balance };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'BALANCE_ERROR' };
@@ -482,7 +485,9 @@ export class WalletManager {
           ? cfg.nativeSymbol
           : assetType === 'usdc'
             ? 'USDC'
-            : cfg.symbol;
+            : assetType === 'dai'
+              ? 'DAI'
+              : cfg.symbol;
       const usdPrice = getAssetUsdPrice(assetType, symbol, prices);
       const preview = await this.blockchain.previewSend(
         network,
@@ -532,7 +537,9 @@ export class WalletManager {
           ? cfg.nativeSymbol
           : assetType === 'usdc'
             ? 'USDC'
-            : cfg.symbol;
+            : assetType === 'dai'
+              ? 'DAI'
+              : cfg.symbol;
       const usdPrice = getAssetUsdPrice(assetType, symbol, prices);
       const result = await this.blockchain.send(
         network,

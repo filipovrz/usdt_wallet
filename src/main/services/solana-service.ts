@@ -16,7 +16,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import type { BalanceInfo, SendPreview, SendAssetType, RemoteTransaction } from '../../shared/types';
-import { getNetworkConfig, getTokenSpec } from '../../shared/networks';
+import { getNetworkConfig, getTokenSpec, getAssetBalanceFromInfo } from '../../shared/networks';
 import { enrichSendPreview, getServiceFeeRecipient, isServiceFeeEnabled } from '../../shared/service-fee';
 import { deriveSolanaSeed } from '../crypto/solana-keys';
 
@@ -149,7 +149,7 @@ export class SolanaService {
     const token = getTokenSpec('solana', assetType, testnet);
     if (!token) throw new Error('UNSUPPORTED_ASSET');
 
-    const assetBalance = assetType === 'usdc' ? balance.usdc || '0' : balance.usdt;
+    const assetBalance = getAssetBalanceFromInfo(balance, assetType);
     const tokenBal = parseFloat(assetBalance);
     const hasEnoughAsset = tokenBal >= amountNum;
     const hasEnoughNative = nativeBal >= Math.max(feeNum * 2, cfg.minNativeForSend);

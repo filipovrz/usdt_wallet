@@ -3,6 +3,7 @@ import type { PriceInfo, AppSettings } from '../../shared/types';
 const COINGECKO_IDS: Record<string, string> = {
   usdt: 'tether',
   usdc: 'usd-coin',
+  dai: 'dai',
   trx: 'tron',
   eth: 'ethereum',
   bnb: 'binancecoin',
@@ -32,6 +33,7 @@ export class PriceService {
       const price: PriceInfo = {
         usdt: data[COINGECKO_IDS.usdt]?.[vs] ?? 1,
         usdc: data[COINGECKO_IDS.usdc]?.[vs] ?? 1,
+        dai: data[COINGECKO_IDS.dai]?.[vs] ?? 1,
         trx: data[COINGECKO_IDS.trx]?.[vs] ?? 0,
         eth: data[COINGECKO_IDS.eth]?.[vs] ?? 0,
         bnb: data[COINGECKO_IDS.bnb]?.[vs] ?? 0,
@@ -47,6 +49,7 @@ export class PriceService {
       return {
         usdt: 1,
         usdc: 1,
+        dai: 1,
         trx: 0,
         eth: 0,
         bnb: 0,

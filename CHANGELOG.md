@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.6.0] — 2026-07-14
+
+### Добавено
+- **TRC-20 USDC** на TRON (mainnet)
+- **3 нови L2:** zkSync Era, Linea, Scroll (USDT + USDC + DAI + native ETH)
+- **DAI** на всички EVM mainnet мрежи (Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Avalanche + новите L2)
+- API keys: Lineascan, Scrollscan (zkSync → Etherscan key)
+
+### Поддържани мрежи (12)
+TRON · Ethereum · BSC · Polygon · Arbitrum · Base · Optimism · Avalanche · zkSync · Linea · Scroll · Solana
+
 ## [2.5.0] — 2026-07-14
 
 ### Добавено

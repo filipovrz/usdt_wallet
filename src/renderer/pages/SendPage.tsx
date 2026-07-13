@@ -15,7 +15,7 @@ import {
   getExplorerTxUrl,
 } from '../components/ui';
 import type { SendPreview, AddressBookEntry, FeeTier, SendAssetType, NetworkId } from '@shared/types';
-import { getNetworkConfig, isSolanaNetwork, networkHasUsdc } from '@shared/networks';
+import { getNetworkConfig, isSolanaNetwork, networkHasUsdc, networkHasDai } from '@shared/networks';
 import { getAccountAddress, isEvmNetwork } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 import { formatApiError } from '../i18n/api-messages';
@@ -36,6 +36,7 @@ export function SendPage() {
   const nativeSymbol = cfg.nativeSymbol;
   const tokenSymbol = cfg.symbol;
   const hasUsdc = networkHasUsdc(activeNetwork, settings.testnetMode);
+  const hasDai = networkHasDai(activeNetwork, settings.testnetMode);
 
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
@@ -59,7 +60,8 @@ export function SendPage() {
 
   useEffect(() => {
     if (assetType === 'usdc' && !hasUsdc) setAssetType('usdt');
-  }, [activeNetwork, hasUsdc, assetType]);
+    if (assetType === 'dai' && !hasDai) setAssetType('usdt');
+  }, [activeNetwork, hasUsdc, hasDai, assetType]);
 
   if (!activeAccount) return <LoadingSpinner />;
 
@@ -68,11 +70,19 @@ export function SendPage() {
       ? `${t.amount} (${nativeSymbol})`
       : assetType === 'usdc'
         ? `${t.amount} (USDC)`
-        : `${t.amount} (${tokenSymbol})`;
+        : assetType === 'dai'
+          ? `${t.amount} (DAI)`
+          : `${t.amount} (${tokenSymbol})`;
 
   const resolveSentSymbol = (previewData?: SendPreview) =>
     previewData?.assetSymbol ||
-    (assetType === 'native' ? nativeSymbol : assetType === 'usdc' ? 'USDC' : tokenSymbol);
+    (assetType === 'native'
+      ? nativeSymbol
+      : assetType === 'usdc'
+        ? 'USDC'
+        : assetType === 'dai'
+          ? 'DAI'
+          : tokenSymbol);
 
   const formatSendSuccess = (symbol: string) =>
     notify.t.toast.sendSuccessAsset.replace('{symbol}', symbol);
@@ -273,6 +283,7 @@ export function SendPage() {
                   onChange={setAssetType}
                   usdtLabel={tokenSymbol}
                   usdcLabel={hasUsdc ? 'USDC' : undefined}
+                  daiLabel={hasDai ? 'DAI' : undefined}
                   nativeLabel={nativeSymbol}
                 />
                 {assetType === 'native' && (

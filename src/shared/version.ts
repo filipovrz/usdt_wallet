@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '2.5.0';
+export const APP_VERSION = '2.6.0';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -11,6 +11,15 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '2.6.0',
+    date: '2026-07-14',
+    changes: [
+      'TRC-20 USDC on TRON',
+      'New L2: zkSync Era, Linea, Scroll',
+      'DAI on all EVM mainnets (USDT/USDC/DAI/native send)',
+    ],
+  },
   {
     version: '2.5.0',
     date: '2026-07-14',

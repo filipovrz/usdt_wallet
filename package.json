@@ -1,6 +1,6 @@
 {
   "name": "usdt-wallet",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "EvtinkoWallet — non-custodial multi-chain desktop wallet (USDT, USDC, native coins, Solana)",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",

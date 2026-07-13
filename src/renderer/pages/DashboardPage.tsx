@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { Button, Card, Badge, NetworkSelector, AccountSelector, LoadingSpinner, WarningAlert } from '../components/ui';
 import { getNetworkConfig } from '@shared/networks';
-import { getAccountAddress, getNetworkTokenLabel, networkHasUsdc } from '@shared/types';
+import { getAccountAddress, getNetworkTokenLabel, networkHasUsdc, networkHasDai } from '@shared/types';
 import type { TronResources } from '@shared/types';
 import { useNotify } from '../hooks/useNotify';
 
@@ -58,6 +58,7 @@ export function DashboardPage() {
   const cfg = getNetworkConfig(activeNetwork, settings.testnetMode);
   const tokenLabel = getNetworkTokenLabel(activeNetwork, settings.testnetMode);
   const showUsdc = networkHasUsdc(activeNetwork, settings.testnetMode);
+  const showDai = networkHasDai(activeNetwork, settings.testnetMode);
 
   return (
     <div className="p-8 space-y-6">
@@ -100,6 +101,17 @@ export function DashboardPage() {
                 </p>
                 {balance?.usdcUsdValue && !settings.hideBalances && (
                   <p className="mt-1 text-sm text-gray-500">≈ {balance.usdcUsdValue}</p>
+                )}
+              </>
+            )}
+            {showDai && (
+              <>
+                <p className="mt-4 text-sm text-gray-400">DAI {t.balance}</p>
+                <p className="mt-1 text-2xl font-bold">
+                  {settings.hideBalances ? '••••••' : balance?.dai ?? '0'} DAI
+                </p>
+                {balance?.daiUsdValue && !settings.hideBalances && (
+                  <p className="mt-1 text-sm text-gray-500">≈ {balance.daiUsdValue}</p>
                 )}
               </>
             )}

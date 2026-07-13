@@ -11,6 +11,9 @@ export const networkIdSchema = z.enum([
   'base',
   'optimism',
   'avalanche',
+  'zksync',
+  'linea',
+  'scroll',
   'solana',
 ]);
 
@@ -36,7 +39,7 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 
-export const sendAssetTypeSchema = z.enum(['usdt', 'usdc', 'native']);
+export const sendAssetTypeSchema = z.enum(['usdt', 'usdc', 'dai', 'native']);
 
 export const sendSchema = z.object({
   accountId: z.string().uuid(),
@@ -72,6 +75,8 @@ export const settingsSchema = z.object({
   arbiscanApiKey: z.string().max(256),
   basescanApiKey: z.string().max(256),
   snowtraceApiKey: z.string().max(256),
+  lineascanApiKey: z.string().max(256),
+  scrollscanApiKey: z.string().max(256),
   defaultFeeTier: z.enum(['slow', 'normal', 'fast']),
   checkUpdatesOnStart: z.boolean(),
 });

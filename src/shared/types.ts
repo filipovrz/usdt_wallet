@@ -9,11 +9,14 @@ export type NetworkId =
   | 'base'
   | 'optimism'
   | 'avalanche'
+  | 'zksync'
+  | 'linea'
+  | 'scroll'
   | 'solana';
 
 export type FeeTier = 'slow' | 'normal' | 'fast';
 
-export type SendAssetType = 'usdt' | 'usdc' | 'native';
+export type SendAssetType = 'usdt' | 'usdc' | 'dai' | 'native';
 
 export type ThemeMode = 'dark' | 'light';
 
@@ -99,6 +102,8 @@ export interface AppSettings {
   arbiscanApiKey: string;
   basescanApiKey: string;
   snowtraceApiKey: string;
+  lineascanApiKey: string;
+  scrollscanApiKey: string;
   defaultFeeTier: FeeTier;
   checkUpdatesOnStart: boolean;
 }
@@ -120,6 +125,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   arbiscanApiKey: '',
   basescanApiKey: '',
   snowtraceApiKey: '',
+  lineascanApiKey: '',
+  scrollscanApiKey: '',
   defaultFeeTier: 'normal',
   checkUpdatesOnStart: true,
 };
@@ -137,10 +144,12 @@ export interface RemoteTransaction {
 export interface BalanceInfo {
   usdt: string;
   usdc?: string;
+  dai?: string;
   native: string;
   nativeSymbol: string;
   usdValue?: string;
   usdcUsdValue?: string;
+  daiUsdValue?: string;
 }
 
 export interface TronResources {
@@ -193,6 +202,7 @@ export interface FeeEstimate {
 export interface PriceInfo {
   usdt: number;
   usdc: number;
+  dai: number;
   trx: number;
   eth: number;
   bnb: number;
@@ -282,6 +292,8 @@ export {
   getAllNetworks,
   ALL_NETWORK_IDS,
   networkHasUsdc,
+  networkHasDai,
+  getAssetBalanceFromInfo,
   getTokenSpec,
   isEvmNetwork,
 } from './networks';

@@ -266,8 +266,10 @@ export function SettingsPage() {
         <Input label="Arbiscan API Key" value={local.arbiscanApiKey} onChange={(e) => setLocal({ ...local, arbiscanApiKey: e.target.value })} />
         <Input label="Basescan API Key" value={local.basescanApiKey} onChange={(e) => setLocal({ ...local, basescanApiKey: e.target.value })} />
         <Input label="Snowtrace API Key (Avalanche)" value={local.snowtraceApiKey} onChange={(e) => setLocal({ ...local, snowtraceApiKey: e.target.value })} />
+        <Input label="Lineascan API Key (Linea)" value={local.lineascanApiKey} onChange={(e) => setLocal({ ...local, lineascanApiKey: e.target.value })} />
+        <Input label="Scrollscan API Key (Scroll)" value={local.scrollscanApiKey} onChange={(e) => setLocal({ ...local, scrollscanApiKey: e.target.value })} />
         <p className="text-xs text-gray-500">
-          Optional — improve transaction history. Free keys from trongrid.io, etherscan.io, bscscan.com, polygonscan.com, arbiscan.io, basescan.org, snowtrace.io. Optimism uses Etherscan key.
+          Optional — improve transaction history. Free keys from trongrid.io, etherscan.io, bscscan.com, polygonscan.com, arbiscan.io, basescan.org, snowtrace.io, lineascan.build, scrollscan.com. Optimism and zkSync use Etherscan key.
         </p>
         <Button variant="secondary" onClick={handleSaveApiKeys}>Save API keys</Button>
       </Card>

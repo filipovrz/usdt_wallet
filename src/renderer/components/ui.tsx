@@ -149,7 +149,7 @@ export function NetworkSelector({
   return (
     <div className="space-y-2">
       <span className="text-sm text-gray-400">Мрежа / Network</span>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
         {ALL_NETWORK_IDS.map((net) => (
           <button
             key={net}
@@ -206,22 +206,26 @@ export function SendAssetSelector({
   onChange,
   usdtLabel,
   usdcLabel,
+  daiLabel,
   nativeLabel,
 }: {
   value: SendAssetType;
   onChange: (v: SendAssetType) => void;
   usdtLabel: string;
   usdcLabel?: string;
+  daiLabel?: string;
   nativeLabel: string;
 }) {
   const options: Array<{ id: SendAssetType; label: string }> = [
     { id: 'usdt', label: usdtLabel },
     ...(usdcLabel ? [{ id: 'usdc' as const, label: usdcLabel }] : []),
+    ...(daiLabel ? [{ id: 'dai' as const, label: daiLabel }] : []),
     { id: 'native', label: nativeLabel },
   ];
+  const cols = options.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : options.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
   return (
     <div className="space-y-2">
-      <div className={clsx('grid gap-2', options.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+      <div className={clsx('grid gap-2', cols)}>
         {options.map((option) => (
           <button
             key={option.id}

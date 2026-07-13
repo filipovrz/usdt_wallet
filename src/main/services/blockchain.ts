@@ -20,7 +20,7 @@ import {
   getNetworkConfig,
   getTokenSpec,
   isSolanaNetwork,
-  networkHasUsdc,
+  getAssetBalanceFromInfo,
 } from '../../shared/networks';
 import { deriveKeysFromMnemonic } from '../crypto/keys';
 import { SolanaService } from './solana-service';
@@ -124,8 +124,19 @@ export class BlockchainService {
       } catch {
         native = '0';
       }
+      let usdc: string | undefined;
+      if (cfg.usdcContract && cfg.usdcDecimals != null) {
+        try {
+          const usdcContract = await tw.contract().at(cfg.usdcContract);
+          const usdcBal = await usdcContract.balanceOf(address).call();
+          usdc = formatUnits(BigInt(usdcBal.toString()), cfg.usdcDecimals);
+        } catch {
+          usdc = '0';
+        }
+      }
       return {
         usdt,
+        usdc,
         native,
         nativeSymbol: cfg.nativeSymbol,
       };
@@ -138,10 +149,15 @@ export class BlockchainService {
     if (cfg.usdcContract && cfg.usdcDecimals != null) {
       usdc = await this.getEvmTokenBalance(network, address, cfg.usdcContract, cfg.usdcDecimals);
     }
+    let dai: string | undefined;
+    if (cfg.daiContract && cfg.daiDecimals != null) {
+      dai = await this.getEvmTokenBalance(network, address, cfg.daiContract, cfg.daiDecimals);
+    }
     const nativeBal = await provider.getBalance(checksummed);
     return {
       usdt,
       usdc,
+      dai,
       native: ethers.formatEther(nativeBal),
       nativeSymbol: cfg.nativeSymbol,
     };
@@ -254,7 +270,7 @@ export class BlockchainService {
     const keys = deriveKeysFromMnemonic(mnemonic, passphrase, accountIndex);
     const from = network === 'tron' ? keys.tronAddress : keys.ethAddress;
     const balance = await this.getBalance(network, from);
-    const assetBalance = assetType === 'usdc' ? balance.usdc || '0' : balance.usdt;
+    const assetBalance = getAssetBalanceFromInfo(balance, assetType);
 
     let fee = '1.1';
     if (network === 'tron') {
@@ -544,6 +560,9 @@ export class BlockchainService {
       base: this.settings.basescanApiKey,
       optimism: this.settings.etherscanApiKey,
       avalanche: this.settings.snowtraceApiKey,
+      zksync: this.settings.etherscanApiKey,
+      linea: this.settings.lineascanApiKey,
+      scroll: this.settings.scrollscanApiKey,
     };
     return keys[network] || '';
   }
@@ -589,55 +608,63 @@ export class BlockchainService {
     }
     const cfg = this.cfg(network);
     if (network === 'tron') {
-      try {
-        const apiBase = cfg.apiUrl || cfg.rpcUrls[0];
-        const url = `${apiBase}/v1/accounts/${address}/transactions/trc20?limit=${limit}&contract_address=${cfg.usdtContract}`;
-        const headers = getHeaders(this.settings);
-        const response = await fetch(url, { headers });
-        if (!response.ok) return [];
-        const data = (await response.json()) as {
-          data?: Array<{
-            transaction_id: string;
-            from: string;
-            to: string;
-            value: string;
-            block_timestamp: number;
-          }>;
-        };
-        return (data.data || []).map((tx) => ({
-          hash: tx.transaction_id,
-          from: tx.from,
-          to: tx.to,
-          amount: formatUnits(BigInt(tx.value), cfg.usdtDecimals),
-          timestamp: tx.block_timestamp,
-          direction: (tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out') as 'in' | 'out',
-          assetSymbol: cfg.symbol,
-        }));
-      } catch {
-        return [];
+      const fetchTrc20 = async (contract: string, decimals: number, symbol: string) => {
+        try {
+          const apiBase = cfg.apiUrl || cfg.rpcUrls[0];
+          const url = `${apiBase}/v1/accounts/${address}/transactions/trc20?limit=${limit}&contract_address=${contract}`;
+          const headers = getHeaders(this.settings);
+          const response = await fetch(url, { headers });
+          if (!response.ok) return [];
+          const data = (await response.json()) as {
+            data?: Array<{
+              transaction_id: string;
+              from: string;
+              to: string;
+              value: string;
+              block_timestamp: number;
+            }>;
+          };
+          return (data.data || []).map((tx) => ({
+            hash: tx.transaction_id,
+            from: tx.from,
+            to: tx.to,
+            amount: formatUnits(BigInt(tx.value), decimals),
+            timestamp: tx.block_timestamp,
+            direction: (tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out') as 'in' | 'out',
+            assetSymbol: symbol,
+          }));
+        } catch {
+          return [];
+        }
+      };
+
+      const usdtTxs = await fetchTrc20(cfg.usdtContract, cfg.usdtDecimals, cfg.symbol);
+      if (!cfg.usdcContract || cfg.usdcDecimals == null) {
+        return usdtTxs.slice(0, limit);
       }
+      const usdcTxs = await fetchTrc20(cfg.usdcContract, cfg.usdcDecimals, 'USDC');
+      return [...usdtTxs, ...usdcTxs]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, limit);
     }
 
-    const usdtTxs = await this.fetchEvmTokenTransactions(
-      network,
-      address,
-      cfg.usdtContract,
-      cfg.usdtDecimals,
-      cfg.symbol,
-      limit
-    );
-    if (!networkHasUsdc(network, this.settings.testnetMode) || !cfg.usdcContract || cfg.usdcDecimals == null) {
-      return usdtTxs.slice(0, limit);
+    const tokenSpecs: Array<{ contract: string; decimals: number; symbol: string }> = [
+      { contract: cfg.usdtContract, decimals: cfg.usdtDecimals, symbol: cfg.symbol },
+    ];
+    if (cfg.usdcContract && cfg.usdcDecimals != null) {
+      tokenSpecs.push({ contract: cfg.usdcContract, decimals: cfg.usdcDecimals, symbol: 'USDC' });
     }
-    const usdcTxs = await this.fetchEvmTokenTransactions(
-      network,
-      address,
-      cfg.usdcContract,
-      cfg.usdcDecimals,
-      'USDC',
-      limit
+    if (cfg.daiContract && cfg.daiDecimals != null) {
+      tokenSpecs.push({ contract: cfg.daiContract, decimals: cfg.daiDecimals, symbol: 'DAI' });
+    }
+
+    const batches = await Promise.all(
+      tokenSpecs.map((spec) =>
+        this.fetchEvmTokenTransactions(network, address, spec.contract, spec.decimals, spec.symbol, limit)
+      )
     );
-    return [...usdtTxs, ...usdcTxs]
+    return batches
+      .flat()
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, limit);
   }

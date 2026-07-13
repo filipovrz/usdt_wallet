@@ -8,6 +8,8 @@ export interface NetworkConfig {
   usdtDecimals: number;
   usdcContract?: string;
   usdcDecimals?: number;
+  daiContract?: string;
+  daiDecimals?: number;
   explorerUrl: string;
   rpcUrls: string[];
   apiUrl?: string;
@@ -26,6 +28,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     symbol: 'USDT',
     usdtContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
     usdtDecimals: 6,
+    usdcContract: 'TEkxiTehnzSmSe2XqrBj4w32run966rdz8',
+    usdcDecimals: 6,
     explorerUrl: 'https://tronscan.org',
     rpcUrls: ['https://api.trongrid.io', 'https://rpc.ankr.com/tron_jsonrpc'],
     apiUrl: 'https://api.trongrid.io',
@@ -41,6 +45,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     usdcDecimals: 6,
+    daiContract: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    daiDecimals: 18,
     explorerUrl: 'https://etherscan.io',
     explorerApiUrl: 'https://api.etherscan.io/api',
     rpcUrls: [
@@ -61,6 +67,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 18,
     usdcContract: '0x8AC76a51cc950d9822D32929f47Ab80fE16538C8',
     usdcDecimals: 18,
+    daiContract: '0x1AF3F329e8BE154074D8766D1E4AA8861489089a',
+    daiDecimals: 18,
     explorerUrl: 'https://bscscan.com',
     explorerApiUrl: 'https://api.bscscan.com/api',
     rpcUrls: ['https://bsc-dataseed.binance.org', 'https://rpc.ankr.com/bsc'],
@@ -77,6 +85,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
     usdcDecimals: 6,
+    daiContract: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
+    daiDecimals: 18,
     explorerUrl: 'https://polygonscan.com',
     explorerApiUrl: 'https://api.polygonscan.com/api',
     rpcUrls: ['https://polygon-rpc.com', 'https://rpc.ankr.com/polygon'],
@@ -93,6 +103,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     usdcDecimals: 6,
+    daiContract: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+    daiDecimals: 18,
     explorerUrl: 'https://arbiscan.io',
     explorerApiUrl: 'https://api.arbiscan.io/api',
     rpcUrls: ['https://arb1.arbitrum.io/rpc', 'https://rpc.ankr.com/arbitrum'],
@@ -109,6 +121,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     usdcDecimals: 6,
+    daiContract: '0x50c5725949A6f0c72E6C4a641F24049A917DB0Cb',
+    daiDecimals: 18,
     explorerUrl: 'https://basescan.org',
     explorerApiUrl: 'https://api.basescan.org/api',
     rpcUrls: ['https://mainnet.base.org', 'https://rpc.ankr.com/base'],
@@ -125,6 +139,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0x0b2C639c533813f4Aa9D7837CAaAbEamirC641',
     usdcDecimals: 6,
+    daiContract: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+    daiDecimals: 18,
     explorerUrl: 'https://optimistic.etherscan.io',
     explorerApiUrl: 'https://api-optimistic.etherscan.io/api',
     rpcUrls: ['https://mainnet.optimism.io', 'https://rpc.ankr.com/optimism'],
@@ -141,6 +157,8 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     usdtDecimals: 6,
     usdcContract: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
     usdcDecimals: 6,
+    daiContract: '0xd586E7F844cEa2F87f50152665BCbc2C279D7256',
+    daiDecimals: 18,
     explorerUrl: 'https://snowtrace.io',
     explorerApiUrl: 'https://api.snowtrace.io/api',
     rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://rpc.ankr.com/avalanche'],
@@ -148,6 +166,60 @@ const MAINNET: Record<NetworkId, NetworkConfig> = {
     chainId: 43114,
     isEvm: true,
     minNativeForSend: 0.01,
+  },
+  zksync: {
+    id: 'zksync',
+    name: 'zkSync Era',
+    symbol: 'USDT',
+    usdtContract: '0x493257fD37EDB34451f62EDf8D269a95217C23B0',
+    usdtDecimals: 6,
+    usdcContract: '0x1d17CBcF0D6D131135a7181c5D85957D76DDAE0',
+    usdcDecimals: 6,
+    daiContract: '0x4B8d4476824EA5D42887041d047eE82D4853c643',
+    daiDecimals: 18,
+    explorerUrl: 'https://era.zksync.network',
+    explorerApiUrl: 'https://api-era.zksync.network/api',
+    rpcUrls: ['https://mainnet.era.zksync.io', 'https://zksync.meowrpc.com'],
+    nativeSymbol: 'ETH',
+    chainId: 324,
+    isEvm: true,
+    minNativeForSend: 0.0005,
+  },
+  linea: {
+    id: 'linea',
+    name: 'Linea',
+    symbol: 'USDT',
+    usdtContract: '0xA219439258ca9da29E9Cc4cE5596924745e12C93',
+    usdtDecimals: 6,
+    usdcContract: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff',
+    usdcDecimals: 6,
+    daiContract: '0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00D5',
+    daiDecimals: 18,
+    explorerUrl: 'https://lineascan.build',
+    explorerApiUrl: 'https://api.lineascan.build/api',
+    rpcUrls: ['https://rpc.linea.build', 'https://1rpc.io/linea'],
+    nativeSymbol: 'ETH',
+    chainId: 59144,
+    isEvm: true,
+    minNativeForSend: 0.0005,
+  },
+  scroll: {
+    id: 'scroll',
+    name: 'Scroll',
+    symbol: 'USDT',
+    usdtContract: '0xf55BECda783897994e5A261F362Ec0f984A2B9A0',
+    usdtDecimals: 6,
+    usdcContract: '0x06eFdBFf2a14a7c8E159442D8D66b1c4c68A8D6',
+    usdcDecimals: 6,
+    daiContract: '0xcA77eEB3e87876036074a5F9542d5c7f7e804D8',
+    daiDecimals: 18,
+    explorerUrl: 'https://scrollscan.com',
+    explorerApiUrl: 'https://api.scrollscan.com/api',
+    rpcUrls: ['https://rpc.scroll.io', 'https://1rpc.io/scroll'],
+    nativeSymbol: 'ETH',
+    chainId: 534352,
+    isEvm: true,
+    minNativeForSend: 0.0005,
   },
   solana: {
     id: 'solana',
@@ -177,6 +249,8 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     rpcUrls: ['https://api.shasta.trongrid.io'],
     apiUrl: 'https://api.shasta.trongrid.io',
     usdtContract: 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf',
+    usdcContract: undefined,
+    usdcDecimals: undefined,
     minNativeForSend: 1,
   },
   ethereum: {
@@ -267,6 +341,48 @@ const TESTNET: Record<NetworkId, NetworkConfig> = {
     chainId: 43113,
     minNativeForSend: 0.01,
   },
+  zksync: {
+    ...MAINNET.zksync,
+    name: 'zkSync Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia-era.zksync.network',
+    explorerApiUrl: 'https://api-sepolia-era.zksync.network/api',
+    rpcUrls: ['https://sepolia.era.zksync.dev'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: undefined,
+    usdcDecimals: undefined,
+    daiContract: undefined,
+    daiDecimals: undefined,
+    chainId: 300,
+    minNativeForSend: 0.0005,
+  },
+  linea: {
+    ...MAINNET.linea,
+    name: 'Linea Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia.lineascan.build',
+    explorerApiUrl: 'https://api-sepolia.lineascan.build/api',
+    rpcUrls: ['https://rpc.sepolia.linea.build'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: '0xFEce4462D57bD51A6A552365A011b95f0E16d9B7',
+    usdcDecimals: 6,
+    daiContract: undefined,
+    daiDecimals: undefined,
+    chainId: 59141,
+    minNativeForSend: 0.0005,
+  },
+  scroll: {
+    ...MAINNET.scroll,
+    name: 'Scroll Sepolia (Testnet)',
+    explorerUrl: 'https://sepolia.scrollscan.com',
+    explorerApiUrl: 'https://api-sepolia.scrollscan.com/api',
+    rpcUrls: ['https://sepolia-rpc.scroll.io'],
+    usdtContract: '0x7169D20Af0D9558C8BfdD8Af2D9F4e3C8C9E5E5E',
+    usdcContract: undefined,
+    usdcDecimals: undefined,
+    daiContract: undefined,
+    daiDecimals: undefined,
+    chainId: 534351,
+    minNativeForSend: 0.0005,
+  },
   solana: {
     ...MAINNET.solana,
     name: 'Solana Devnet',
@@ -288,6 +404,9 @@ export const ALL_NETWORK_IDS: NetworkId[] = [
   'base',
   'optimism',
   'avalanche',
+  'zksync',
+  'linea',
+  'scroll',
   'solana',
 ];
 
@@ -312,6 +431,17 @@ export function networkHasUsdc(id: NetworkId, testnet = false): boolean {
   return !!getNetworkConfig(id, testnet).usdcContract;
 }
 
+export function networkHasDai(id: NetworkId, testnet = false): boolean {
+  if (testnet) return false;
+  return !!getNetworkConfig(id, testnet).daiContract;
+}
+
+export function getAssetBalanceFromInfo(balance: { usdt: string; usdc?: string; dai?: string }, assetType: SendAssetType): string {
+  if (assetType === 'usdc') return balance.usdc || '0';
+  if (assetType === 'dai') return balance.dai || '0';
+  return balance.usdt;
+}
+
 export interface TokenSpec {
   contract: string;
   decimals: number;
@@ -330,6 +460,9 @@ export function getTokenSpec(
   }
   if (assetType === 'usdc' && cfg.usdcContract && cfg.usdcDecimals != null) {
     return { contract: cfg.usdcContract, decimals: cfg.usdcDecimals, symbol: 'USDC' };
+  }
+  if (assetType === 'dai' && cfg.daiContract && cfg.daiDecimals != null) {
+    return { contract: cfg.daiContract, decimals: cfg.daiDecimals, symbol: 'DAI' };
   }
   return null;
 }
