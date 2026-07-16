@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.4] — 2026-07-16
+
+### Поправено
+- **Installer ERR_REQUIRE_ESM** — electron-builder 26 връщаше ESM `uuid@14` под `rpc-websockets` (чупи `@solana/web3.js` при старт)
+- `afterPack` hook маха nested uuid; build винаги пуска uuid patch
+
 ## [3.2.3] — 2026-07-16
 
 ### Поправено

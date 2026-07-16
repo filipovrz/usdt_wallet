@@ -1,6 +1,6 @@
 {
   "name": "usdt-wallet",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "description": "EvtinkoWallet — non-custodial multi-chain desktop wallet (USDT, USDC, BTC, TON, native coins, Solana)",
   "main": "dist-electron/main/index.js",
   "author": "Evtinko Auctions",
@@ -10,10 +10,10 @@
     "build": "tsc -p tsconfig.node.json && vite build && tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs",
     "preview": "vite preview",
     "electron:dev": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron . || exit 0\"",
-    "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win && node scripts/archive-installers.mjs",
-    "electron:build:mac": "node scripts/prepare-icons.mjs && npm run build && electron-builder --mac",
-    "electron:build:linux": "node scripts/prepare-icons.mjs && npm run build && electron-builder --linux",
+    "electron:build": "node scripts/patch-rpc-websockets-uuid.mjs && npm run build && electron-builder",
+    "electron:build:win": "node scripts/patch-rpc-websockets-uuid.mjs && npm run build && electron-builder --win && node scripts/archive-installers.mjs",
+    "electron:build:mac": "node scripts/prepare-icons.mjs && node scripts/patch-rpc-websockets-uuid.mjs && npm run build && electron-builder --mac",
+    "electron:build:linux": "node scripts/prepare-icons.mjs && node scripts/patch-rpc-websockets-uuid.mjs && npm run build && electron-builder --linux",
     "test": "npm run build && node scripts/run-tests.mjs",
     "test:live": "npm run build && node scripts/run-tests.mjs --live",
     "test:e2e": "npm run build && playwright test",
@@ -86,6 +86,7 @@
     },
     "npmRebuild": false,
     "nodeGypRebuild": false,
+    "afterPack": "./scripts/after-pack.cjs",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -94,7 +95,8 @@
         "from": "node_modules/call-bind-apply-helpers",
         "to": "node_modules/call-bind-apply-helpers",
         "filter": ["**/*"]
-      }
+      },
+      "!**/node_modules/rpc-websockets/node_modules/uuid/**"
     ],
     "win": {
       "target": [
