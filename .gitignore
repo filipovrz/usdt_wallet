@@ -21,3 +21,8 @@ vault.enc.json
 .test-debug-*/
 .test-finalize-*/
 .test-inline-*/
+
+*.jpg
+*.png
+!build/icon.png
+!build/icons/*.png
