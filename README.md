@@ -4,12 +4,12 @@
 
 Професионален **некастодиален** desktop портфейл — **USDT**, **USDC**, **native coins**, **Bitcoin** (on-chain + Lightning), **TON** и **Solana (HNT/SPL)**.
 
-**Текуща версия: 3.2.2** · Production-ready
+**Текуща версия: 3.2.3** · Production-ready
 
 Вашите private keys и seed фраза **никога не напускат компютъра**. Нулева телеметрия.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/version-3.2.2-green)
+![Version](https://img.shields.io/badge/version-3.2.3-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -79,7 +79,7 @@ $env:CSC_IDENTITY_AUTO_DISCOVERY='false'
 npm run electron:build:win
 ```
 
-→ `release/EvtinkoWallet Setup 3.2.2.exe`  
+→ `release/EvtinkoWallet Setup 3.2.3.exe`  
 → **Архив (всички версии):** `installers/`
 
 - Desktop + Start Menu shortcut **EvtinkoWallet**

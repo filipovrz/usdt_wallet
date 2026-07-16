@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-07-13T23:53:51.710Z",
-  "count": 11,
+  "updatedAt": "2026-07-16T20:25:36.074Z",
+  "count": 12,
   "files": [
     {
       "name": "EvtinkoWallet Setup 2.5.0.exe",
@@ -37,6 +37,10 @@
     {
       "name": "EvtinkoWallet Setup 3.2.2.exe",
       "bytes": 105050772
+    },
+    {
+      "name": "EvtinkoWallet Setup 3.2.3.exe",
+      "bytes": 104547534
     },
     {
       "name": "USDT Wallet Setup 1.0.0.exe",

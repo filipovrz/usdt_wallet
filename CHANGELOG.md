@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.3] — 2026-07-16
+
+### Поправено
+- **Windows installer crash** — `Cannot find module 'call-bind-apply-helpers'` при старт (бъг в electron-builder 25 asar packaging)
+- Upgrade **electron-builder** 25.1.8 → 26.3.2 + force-include на липсващия модул
+
 ## [3.2.2] — 2026-07-14
 
 ### Добавено / подобрено

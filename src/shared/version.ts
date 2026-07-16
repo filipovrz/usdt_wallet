@@ -1,5 +1,5 @@
 /** Синхронизирайте с package.json при всяка нова версия */
-export const APP_VERSION = '3.2.2';
+export const APP_VERSION = '3.2.3';
 
 export const COPYRIGHT_HOLDER = 'Evtinko Auctions';
 export const COPYRIGHT_TEXT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
@@ -15,6 +15,14 @@ export const UPDATE_MANIFEST_URL =
   'https://github.com/filipovrz/usdt_wallet/releases/latest/download/latest.json';
 
 export const VERSION_HISTORY = [
+  {
+    version: '3.2.3',
+    date: '2026-07-16',
+    changes: [
+      'Fix Windows installer crash: missing call-bind-apply-helpers in asar',
+      'Upgrade electron-builder 25 → 26 (known packaging bug)',
+    ],
+  },
   {
     version: '3.2.2',
     date: '2026-07-14',
